@@ -1,4 +1,9 @@
-require('./config.js');
+// BELOW IS CONFIG
+const TELEGRAM_BOT_API_KEY = "";
+const IRC_GROUP_NAME = "";
+const TELEGRAM_GROUP_ID = "";
+// ABOVE IS CONFIG
+
 var Telegram = require('telegram-bot');
 var tg = new Telegram(TELEGRAM_BOT_API_KEY);
 var irc = require('irc');
@@ -25,16 +30,16 @@ client.addListener('message' + IRC_GROUP_NAME, function (from, message) {
        }).then(function(msg){
             var idpattl = /^\[([^\]\[]+)\]/;
             var getmsg = idpattl.exec(message);
-            memcached.set(msg.message_id, getmsg[1], 3600, function (err) {console.log("error: " + err);});
+            memcached.set(msg.result.message_id, getmsg[1], 3600, function (err) {console.log("error: " + err);});
        });
 
     }
     else {
-       var ret = tg.sendMessage({
+       tg.sendMessage({
             text: "["+ from + "] " + message,
             chat_id: TELEGRAM_GROUP_ID
         }).then(function(msg){
-            memcached.set(msg.message_id, from, 3600, function (err) {console.log("error: " + err);});
+            memcached.set(msg.result.message_id, from, 3600, function (err) {console.log("error: " + err);});
         });
 
     }
@@ -43,17 +48,15 @@ client.addListener('message' + IRC_GROUP_NAME, function (from, message) {
 client.addListener('action', function (from, to, text) {
     console.log("From IRC Action " + from + "  --  " + text);
     if(to == IRC_GROUP_NAME) {
-     if(from == "OrzTox" || from == "OrzGTalk") {
-       tg.sendMessage({
-            text: "** " + text + " **",
+        if(from == "OrzTox" || from == "OrzGTalk") {
+            var textsend = "** " + text + " **";
+        } else {
+            var textsend = "** ["+ from + "] " + text + " **";
+        }
+        tg.sendMessage({
+            text: textsend,
             chat_id: TELEGRAM_GROUP_ID
-       });
-     } else {
-       tg.sendMessage({
-            text: "** ["+ from + "] " + text + " **",
-            chat_id: TELEGRAM_GROUP_ID
-       });
-     }
+        });
     }
 });
 
@@ -71,7 +74,7 @@ tg.on('message', function(msg) {
 
         if (msg.reply_to_message) {
             memcached.get(msg.reply_to_message.message_id, function (err, data) {
-                console.log(err);
+                if (err){console.log(err);}
                 if (data){
                     var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] " + data + ": ");
                     client.say(IRC_GROUP_NAME.toString(), "[" + usersend + "] " + data + ": " + messagetext);
