@@ -1,0 +1,4 @@
+//BELOW IS CONFIG
+const TELEGRAM_BOT_API_KEY = "";
+const IRC_GROUP_NAME = "";
+const TELEGRAM_GROUP_ID = "";
