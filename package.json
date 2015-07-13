@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "irc": "^0.3.12",
+    "memcached": "^2.1.0",
     "telegram-bot": "^0.1.0"
   },
   "private": true

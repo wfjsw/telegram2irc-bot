@@ -1,6 +1,8 @@
 var Telegram = require('telegram-bot');
 var tg = new Telegram("ClientKeyGoesHere");
 var irc = require('irc');
+var Memcached = require('memcached');
+var memcached = new Memcached('127.0.0.1:11211');
 var client = new irc.Client('irc.freenode.net', 'OrzTgBot', {
     channels: ['##Orz'],
 });
@@ -16,16 +18,20 @@ process.on('SIGINT', function(code) {
 client.addListener('message##Orz', function (from, message) {
     console.log("From IRC " + from + "  --  " + message);
     if(from == "OrzTox" || from == "OrzGTalk") {
-       tg.sendMessage({
+       var ret = tg.sendMessage({
             text: message,
             chat_id: -14381522
        });
+       var idpattl = /^\[([^\]\[]+)\]/;
+       var getmsg = idpattl.exec(message);
+       memcached.set(ret.message_id, getmsg[1], 3600, function (err) {console.log("error: " + err);});
     }
     else {
-       tg.sendMessage({
+       var ret = tg.sendMessage({
             text: "["+ from + "] " + message,
             chat_id: -14381522
        });
+       memcached.set(ret.message_id, from, 3600, function (err) { /* stuff */ });
     }
 });
 
@@ -49,6 +55,7 @@ client.addListener('action', function (from, to, text) {
 tg.on('message', function(msg) {
     //Process Commands.
     console.log("From ID " + msg.chat.id + "  --  " + msg.text);
+    
     if (msg.text && msg.chat.id == -14381522) {
         if (msg.from.last_name) {
             var usersend = msg.from.first_name + " " + msg.from.last_name;
@@ -56,8 +63,22 @@ tg.on('message', function(msg) {
         else {
             var usersend = msg.from.first_name;
         }
-        var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] ");
-        client.say('##Orz', "[" + usersend + "] " + messagetext);
+
+        if (msg.reply_to_message.message_id) {
+            memcached.get(msg.reply_to_message.message_id, function (err, data) {
+                console.log(err);
+                if (data){
+                    var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] " + data + ": ");
+                    client.say('##Orz', "[" + usersend + "] " + data + ": " + messagetext);
+                } else {
+                    var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] " + msg.reply_to_message.from.first_name + ": ");
+                    client.say('##Orz', "[" + usersend + "] " + msg.reply_to_message.from.first_name + ": " + messagetext);
+                }
+            });
+        } else {
+            var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] ");
+            client.say('##Orz', "[" + usersend + "] " + messagetext);
+        }
     }
     //End of the sub process.
 });
