@@ -1,4 +1,4 @@
-require('config.js');
+require('./config.js');
 var Telegram = require('telegram-bot');
 var tg = new Telegram(TELEGRAM_BOT_API_KEY);
 var irc = require('irc');
@@ -74,15 +74,15 @@ tg.on('message', function(msg) {
                 console.log(err);
                 if (data){
                     var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] " + data + ": ");
-                    client.say(IRC_GROUP_NAME, "[" + usersend + "] " + data + ": " + messagetext);
+                    client.say(IRC_GROUP_NAME.toString(), "[" + usersend + "] " + data + ": " + messagetext);
                 } else {
                     var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] " + msg.reply_to_message.from.first_name + ": ");
-                    client.say(IRC_GROUP_NAME, "[" + usersend + "] " + msg.reply_to_message.from.first_name + ": " + messagetext);
+                    client.say(IRC_GROUP_NAME.toString(), "[" + usersend + "] " + msg.reply_to_message.from.first_name + ": " + messagetext);
                 }
             });
         } else {
             var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] ");
-            client.say(IRC_GROUP_NAME, "[" + usersend + "] " + messagetext);
+            client.say(IRC_GROUP_NAME.toString(), "[" + usersend + "] " + messagetext);
         }
     }
     //End of the sub process.
