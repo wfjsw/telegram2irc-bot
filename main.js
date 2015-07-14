@@ -7,11 +7,10 @@ const TELEGRAM_GROUP_ID = "";
 var Telegram = require('telegram-bot');
 var tg = new Telegram(TELEGRAM_BOT_API_KEY);
 var irc = require('irc');
-var Memcached = require('memcached');
-var memcached = new Memcached('127.0.0.1:11211');
 var client = new irc.Client('irc.freenode.net', 'OrzTgBot', {
     channels: [IRC_GROUP_NAME],
 });
+var tgid;
 
 // Event to write config on exit.
 process.on('SIGINT', function(code) {
@@ -27,21 +26,13 @@ client.addListener('message' + IRC_GROUP_NAME, function (from, message) {
        tg.sendMessage({
             text: message,
             chat_id: TELEGRAM_GROUP_ID
-       }).then(function(msg){
-            var idpattl = /^\[([^\]\[]+)\]/;
-            var getmsg = idpattl.exec(message);
-            memcached.set(msg.result.message_id, getmsg[1], 3600, function (err) {console.log("error: " + err);});
        });
-
     }
     else {
        tg.sendMessage({
             text: "["+ from + "] " + message,
             chat_id: TELEGRAM_GROUP_ID
-        }).then(function(msg){
-            memcached.set(msg.result.message_id, from, 3600, function (err) {console.log("error: " + err);});
         });
-
     }
 });
 
@@ -71,19 +62,26 @@ tg.on('message', function(msg) {
         else {
             var usersend = msg.from.first_name;
         }
+        if (usersend.length > 20) {
+            usersend = usersend.slice(0,21) + "...";
+        }
 
         if (msg.reply_to_message) {
-            memcached.get(msg.reply_to_message.message_id, function (err, data) {
-                if (err){console.log(err);}
-                if (data){
-                    var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] " + data + ": ");
-                    client.say(IRC_GROUP_NAME.toString(), "[" + usersend + "] " + data + ": " + messagetext);
-                } else {
-                    var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] " + msg.reply_to_message.from.first_name + ": ");
-                    client.say(IRC_GROUP_NAME.toString(), "[" + usersend + "] " + msg.reply_to_message.from.first_name + ": " + messagetext);
+            if (msg.reply_to_message.from.id == tgid) {
+                var replyto = msg.reply_to_message.text.match(/^\[([^\]\[]+)\]/);
+                var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] " + replyto + ": ");
+                client.say(IRC_GROUP_NAME.toString(), "[" + usersend + "] " + replyto + ": " + messagetext);
+            }
+            else {
+                var replyto = msg.reply_to_message.from.last_name ? msg.reply_to_message.from.first_name + " " + msg.reply_to_message.from.last_name : msg.reply_to_message.from.first_name;
+                if (replyto.length > 20) {
+                    replyto = replyto.slice(0,21) + "...";
                 }
-            });
-        } else {
+                var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] " + replyto + ": ");
+                client.say(IRC_GROUP_NAME.toString(), "[" + usersend + "] " + replyto + ": " + messagetext);
+            }
+        }
+        else {
             var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] ");
             client.say(IRC_GROUP_NAME.toString(), "[" + usersend + "] " + messagetext);
         }
@@ -96,5 +94,8 @@ client.addListener('error', function(message) {
 });
 
 tg.start();
+tg.getMe().then(function(ret){
+    tgid = ret.result.id;
+})
 client.join(IRC_GROUP_NAME);
 console.log("卫星成功发射")
