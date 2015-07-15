@@ -68,7 +68,7 @@ tg.on('message', function(msg) {
 
         if (msg.reply_to_message) {
             if (msg.reply_to_message.from.id == tgid) {
-                var replyto = msg.reply_to_message.text.match(/^\[([^\]\[]+)\]/);
+                var replyto = msg.reply_to_message.text.match(/^\[([^\]\[]+)\]/)[1];
                 var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] " + replyto + ": ");
                 client.say(IRC_GROUP_NAME.toString(), "[" + usersend + "] " + replyto + ": " + messagetext);
             }
