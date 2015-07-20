@@ -84,7 +84,6 @@ tg.on('message', function(msg) {
     // Process Commands.
     console.log(printf('From ID %1  --  %2', msg.chat.id, msg.text));
     var user, reply_to, forward_from, message_text;
-    var first_name, last_name;
     if(!msg.text || msg.chat.id != config.tg_group_id)
 	return;
     user = format_name(msg.from.first_name, msg.from.last_name);
