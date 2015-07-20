@@ -1,16 +1,49 @@
-// BELOW IS CONFIG
-const TELEGRAM_BOT_API_KEY = "";
-const IRC_GROUP_NAME = "";
-const TELEGRAM_GROUP_ID = "";
-// ABOVE IS CONFIG
+#!/usr/bin/env node
+
+
+'use strict';
+
 
 var Telegram = require('telegram-bot');
-var tg = new Telegram(TELEGRAM_BOT_API_KEY);
-var irc = require('irc');
-var client = new irc.Client('irc.freenode.net', 'OrzTgBot', {
-    channels: [IRC_GROUP_NAME],
+var IRC = require('irc');
+var config = require('./config.js');
+var tg = new Telegram(config.tg_bot_api_key);
+var client = new IRC.Client('irc.freenode.net', config.irc_nick, {
+    channels: [config.irc_channel],
 });
 var tgid;
+
+
+function printf(args) {
+    var string = arguments[0];
+    /* note that %n in the string must be in ascending order */
+    /* like 'Foo %1 Bar %2 %3' */
+    var i;
+    for(i=arguments.length-1; i>0; i--){
+	string = string.replace('%'+i, arguments[i]);
+    }
+    return string;
+}
+
+
+function format_name(first_name, last_name) {
+    var full_name = last_name?
+	first_name + ' ' + last_name:
+	first_name;
+    if(full_name.length > 20)
+	full_name = full_name.slice(0, 20);
+    return full_name;
+}
+
+
+function format_newline(text, user, target, type) {
+    if(type == 'reply')
+	return text.replace(/\n/g, printf('\n[%1] %2: ', user, target));
+    if(type == 'forward')
+	return text.replace(/\n/g, printf('\n[%1] >> (%2) ', user, target));
+    return text.replace(/\n/g, printf("\n[%1] ", user));
+}
+
 
 // Event to write config on exit.
 process.on('SIGINT', function(code) {
@@ -20,82 +53,74 @@ process.on('SIGINT', function(code) {
 });
 // End Exit Event.
 
-client.addListener('message' + IRC_GROUP_NAME, function (from, message) {
-    console.log("From IRC " + from + "  --  " + message);
-    if(from == "OrzTox" || from == "OrzGTalk") {
-       tg.sendMessage({
-            text: message,
-            chat_id: TELEGRAM_GROUP_ID
-       });
-    }
-    else {
-       tg.sendMessage({
-            text: "["+ from + "] " + message,
-            chat_id: TELEGRAM_GROUP_ID
-        });
-    }
+
+client.addListener('message' + config.irc_channel, function (from, message) {
+    console.log(printf('From IRC %1  --  %2', from, message));
+    if(config.other_bridge_bots.indexOf(from) == -1)
+	message = printf('[%1] %2', from, message);
+    tg.sendMessage({
+        text: message,
+        chat_id: config.tg_group_id
+    });
 });
+
 
 client.addListener('action', function (from, to, text) {
-    console.log("From IRC Action " + from + "  --  " + text);
-    if(to == IRC_GROUP_NAME) {
-        if(from == "OrzTox" || from == "OrzGTalk") {
-            var textsend = "** " + text + " **";
-        } else {
-            var textsend = "** ["+ from + "] " + text + " **";
-        }
+    console.log(printf('From IRC Action %1  --  %2', from, text));
+    if(to == config.irc_channel) {
+        if(config.other_bridge_bots.indexOf(from) == -1)
+            text = printf('** [%1] %2 **', from, text);
+	else
+            text = printf('** %1 **', text);
         tg.sendMessage({
-            text: textsend,
-            chat_id: TELEGRAM_GROUP_ID
+            text: text,
+            chat_id: config.tg_group_id
         });
     }
 });
 
-tg.on('message', function(msg) {
-    //Process Commands.
-    console.log("From ID " + msg.chat.id + "  --  " + msg.text);
-    
-    if (msg.text && msg.chat.id == TELEGRAM_GROUP_ID) {
-        if (msg.from.last_name) {
-            var usersend = msg.from.first_name + " " + msg.from.last_name;
-        }
-        else {
-            var usersend = msg.from.first_name;
-        }
-        if (usersend.length > 20) {
-            usersend = usersend.slice(0,21) + "...";
-        }
 
-        if (msg.reply_to_message) {
-            if (msg.reply_to_message.from.id == tgid) {
-                var replyto = msg.reply_to_message.text.match(/^\[([^\]\[]+)\]/)[1];
-                var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] " + replyto + ": ");
-                client.say(IRC_GROUP_NAME.toString(), "[" + usersend + "] " + replyto + ": " + messagetext);
-            }
-            else {
-                var replyto = msg.reply_to_message.from.last_name ? msg.reply_to_message.from.first_name + " " + msg.reply_to_message.from.last_name : msg.reply_to_message.from.first_name;
-                if (replyto.length > 20) {
-                    replyto = replyto.slice(0,21) + "...";
-                }
-                var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] " + replyto + ": ");
-                client.say(IRC_GROUP_NAME.toString(), "[" + usersend + "] " + replyto + ": " + messagetext);
-            }
-        }
-        else {
-            var messagetext = msg.text.replace(/\n/g,"\n["+usersend+"] ");
-            client.say(IRC_GROUP_NAME.toString(), "[" + usersend + "] " + messagetext);
-        }
+tg.on('message', function(msg) {
+    // Process Commands.
+    console.log(printf('From ID %1  --  %2', msg.chat.id, msg.text));
+    var user, reply_to, forward_from, message_text;
+    var first_name, last_name;
+    if(!msg.text || msg.chat.id != config.tg_group_id)
+	return;
+    user = format_name(msg.from.first_name, msg.from.last_name);
+    if(msg.reply_to_message){
+        if(msg.reply_to_message.from.id == tgid)
+            reply_to = msg.reply_to_message.text.match(/^\[([^\]\[]+)\]/)[1];
+        else
+	    reply_to = format_name(msg.reply_to_message.from.first_name, msg.reply_to_message.from.last_name);
+        message_text = format_newline(msg.text, user, reply_to, 'reply');
+	message_text = printf('[%1] %2: %3', user, reply_to, message_text);
+    }else if(msg.forward_from){
+	if(msg.forward_from.id == tgid)
+	    forward_from = msg.text.match(/^\[([^\]\[]+)\]/)[1];
+	else
+	    forward_from = format_name(msg.forward_from.first_name, msg.forward_from.last_name);
+	message_text = format_newline(msg.text, user, forward_from, 'forward');
+	message_text = printf('[%1] >> (%2) %3', user, forward_from, message_text);
+    }else{
+	message_text = format_newline(msg.text, user);
+	message_text = printf('[%1] %2', user, message_text);
     }
+    client.say(config.irc_channel, message_text);
     //End of the sub process.
 });
+
 
 client.addListener('error', function(message) {
       console.log('error: ', message);
 });
 
+
 tg.start();
 tg.getMe().then(function(ret){
     tgid = ret.result.id;
 })
-client.join(IRC_GROUP_NAME);
-console.log("卫星成功发射")
+client.join(config.irc_channel);
+
+
+console.log("卫星成功发射");

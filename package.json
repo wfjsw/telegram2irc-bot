@@ -1,7 +1,7 @@
 {
   "name": "orz-telegram-bot",
   "version": "0.1.0",
-  "description": "This is a IRC-Telegram Bridge for ##Orz",
+  "description": "An IRC-Telegram Bridge for ##Orz",
   "author": "Jianshu Wang",
   "bin": {
     "ircbot": "./main.js"
