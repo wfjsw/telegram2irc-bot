@@ -8,7 +8,7 @@ var Telegram = require('telegram-bot');
 var IRC = require('irc');
 var config = require('./config.js');
 var tg = new Telegram(config.tg_bot_api_key);
-var client = new IRC.Client('irc.freenode.net', config.irc_nick, {
+var client = new IRC.Client(config.irc_server, config.irc_nick, {
     channels: [config.irc_channel],
 });
 var tgid;
@@ -47,7 +47,7 @@ function format_newline(text, user, target, type) {
 // Event to write config on exit.
 process.on('SIGINT', function(code) {
     console.log('About to exit with code:', code);
-    client.part(IRC_GROUP_NAME);
+    client.part(config.irc_channel);
     process.exit();
 });
 // End Exit Event.
