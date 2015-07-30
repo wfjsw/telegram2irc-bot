@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// Total hours wasted here -> 12
+// ^ Do Not Remove This!
 
 'use strict';
 
@@ -10,6 +12,9 @@ var config = require('./config.js');
 var tg = new Telegram(config.tg_bot_api_key);
 var client = new IRC.Client(config.irc_server, config.irc_nick, {
     channels: [config.irc_channel],
+    sasl: config.irc_sasl,
+    username: config.irc_username,
+    password: config.irc_password
 });
 var tgid;
 

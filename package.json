@@ -1,6 +1,6 @@
 {
   "name": "orz-telegram-bot",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "An IRC-Telegram Bridge for ##Orz",
   "author": "Jianshu Wang",
   "bin": {
@@ -8,8 +8,7 @@
   },
   "dependencies": {
     "irc": "^0.3.12",
-    "memcached": "^2.1.0",
-    "telegram-bot": "^0.1.0"
+    "telegram-bot": "^0.2.0"
   },
   "private": true
 }

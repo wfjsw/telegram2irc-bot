@@ -1,6 +1,16 @@
+// Config File For Akarin
+
+// Telegram-Bot Config
 exports.tg_bot_api_key = '';
+exports.tg_group_id = 0;
+exports.other_bridge_bots = []; //Auto hide prefix from these name
+
+// IRC Config
 exports.irc_server = '';
 exports.irc_channel = '';
 exports.irc_nick = '';
-exports.tg_group_id = 0;
-exports.other_bridge_bots = [];
+
+// Turn On IRC Nick Auth By set SASL to true
+exports.irc_sasl = false;
+exports.irc_username = ''; // Usually Same as irc_nick
+exports.irc_password = '';
