@@ -189,11 +189,11 @@ tg.on('message', function(msg) {
     var user, reply_to, forward_from, message_text;
     
     // Message Filter
-    if(!msg.text || msg.chat.id != config.tg_group_id || !enabled || msg.text.slice(0, 3) == '@@@')
+    if(!msg.text || msg.chat.id != config.tg_group_id || !enabled)
         return;
 
     // Blocking Enforcer
-    if (blockt2i.indexOf(msg.from.id) > -1)
+    if (blockt2i.indexOf(msg.from.id) > -1 ||msg.text.slice(0, 3) == '@@@')
         return;
 
     user = format_name(msg.from.first_name, msg.from.last_name);
