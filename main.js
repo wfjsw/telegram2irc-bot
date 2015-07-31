@@ -65,7 +65,7 @@ client.addListener('message' + config.irc_channel, function (from, message) {
     console.log(printf('From IRC %1  --  %2', from, message));
     
     // Blocking Enforcer
-    if (blocki2t.indexOf(from) > -1 || ！ enabled)
+    if (blocki2t.indexOf(from) > -1 || !enabled)
         return;
 
     if(config.other_bridge_bots.indexOf(from) == -1)
@@ -81,7 +81,7 @@ client.addListener('action', function (from, to, text) {
     console.log(printf('From IRC Action %1  --  %2', from, text));
 
     // Blocking Enforcer
-    if (blocki2t.indexOf(from) > -1 || ！enabled)
+    if (blocki2t.indexOf(from) > -1 || !enabled)
         return;
 
     if(to == config.irc_channel){
