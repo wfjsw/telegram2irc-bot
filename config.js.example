@@ -3,7 +3,6 @@
 // Telegram-Bot Config
 exports.tg_bot_api_key = '';
 exports.tg_group_id = 0;
-exports.other_bridge_bots = []; //Auto hide prefix from these name
 
 // IRC Config
 exports.irc_server = '';
@@ -14,3 +13,8 @@ exports.irc_nick = '';
 exports.irc_sasl = false;
 exports.irc_username = ''; // Usually Same as irc_nick
 exports.irc_password = '';
+
+// Blocking Config
+exports.other_bridge_bots = []; //Auto hide prefix from these name
+exports.blocki2t = []; // Block specific user from IRC to Telegram, use nickname here.
+exports.blockt2i = []; // Block specific user from Telegram to IRC, use UserID here. Acquire ID by forward a user's message to @userinfobot.

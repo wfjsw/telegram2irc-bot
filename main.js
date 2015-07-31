@@ -16,7 +16,10 @@ var client = new IRC.Client(config.irc_server, config.irc_nick, {
     username: config.irc_username,
     password: config.irc_password
 });
-var tgid;
+var tgid, tgusername;
+var enabled = true;
+var blocki2t = new Array();
+var blockt2i = new Array();
 
 
 function printf(args) {
@@ -60,6 +63,11 @@ process.on('SIGINT', function(code) {
 
 client.addListener('message' + config.irc_channel, function (from, message) {
     console.log(printf('From IRC %1  --  %2', from, message));
+    
+    // Blocking Enforcer
+    if (blocki2t.indexOf(from) > -1)
+        return;
+
     if(config.other_bridge_bots.indexOf(from) == -1)
         message = printf('[%1] %2', from, message);
     tg.sendMessage({
@@ -71,6 +79,11 @@ client.addListener('message' + config.irc_channel, function (from, message) {
 
 client.addListener('action', function (from, to, text) {
     console.log(printf('From IRC Action %1  --  %2', from, text));
+
+    // Blocking Enforcer
+    if (blocki2t.indexOf(from) > -1)
+        return;
+
     if(to == config.irc_channel){
         if(config.other_bridge_bots.indexOf(from) == -1)
             text = printf('** [%1] %2 **', from, text);
@@ -87,9 +100,102 @@ client.addListener('action', function (from, to, text) {
 tg.on('message', function(msg) {
     // Process Commands.
     console.log(printf('From ID %1  --  %2', msg.chat.id, msg.text));
+    if (msg.text.slice(0, 1) == '/') {
+        var command = msg.text.split(" ");
+        if (command[0] == "/hold" || command[0] == "/hold@" + tgusername) {
+            tg.sendMessage({
+                text: "阿卡林黑洞已关闭！",
+                chat_id: msg.chat.id
+            });
+            enabled = false;
+            return;
+        } else if (command[0] == "/unhold" || command[0] == "/unhold@" + tgusername) {
+            tg.sendMessage({
+                text: "阿卡林黑洞已开启！",
+                chat_id: msg.chat.id
+            });
+            enabled = true;
+            return;
+        } else if (command[0] == "/blocki2t" || command[0] == "/blocki2t@" + tgusername) {
+            if (command[1] && blocki2t.indexOf(command[1]) == -1) {
+                blocki2t.push(command[1]);
+                tg.sendMessage({
+                    text: "Temporary Blocked " + command[1] + " From IRC to Telegram!",
+                    chat_id: msg.chat.id
+                });
+            } else {
+                tg.sendMessage({
+                    text: "Nickname Unspecified!",
+                    chat_id: msg.chat.id
+                });
+            }
+            return;
+        } else if (command[0] == "/blockt2i" || command[0] == "/blockt2i@" + tgusername) {
+            if (msg.reply_to_message && blockt2i.indexOf(msg.reply_to_message.from.id) == -1) {
+                blockt2i.push(msg.reply_to_message.from.id);
+                tg.sendMessage({
+                    text: "Temporary Blocked " + msg.reply_to_message.from.username + " From Telegram to IRC!",
+                    chat_id: msg.chat.id
+                });
+            } else if (command[1] && !isNaN(command[1]) && blockt2i.indexOf(command[1]) == -1) {
+                blockt2i.push(msg.reply_to_message.from.id);
+                tg.sendMessage({
+                    text: "Temporary Blocked " + command[1] + " From Telegram to IRC!",
+                    chat_id: msg.chat.id
+                });
+            } else {
+                tg.sendMessage({
+                    text: "Target Unspecified!",
+                    chat_id: msg.chat.id
+                });
+            }
+            return;
+        } else if (command[0] == "/unblocki2t" || command[0] == "/unblocki2t@" + tgusername) {
+            if (command[1] && blocki2t.indexOf(command[1]) > -1) {
+                blocki2t.splice(blocki2t.indexOf(command[1]), 1);
+                tg.sendMessage({
+                    text: "Temporary Unblocked " + command[1] + " From IRC to Telegram!",
+                    chat_id: msg.chat.id
+                });
+            } else {
+                tg.sendMessage({
+                    text: "Nickname Unspecified!",
+                    chat_id: msg.chat.id
+                });
+            }
+            return;
+        } else if (command[0] == "/blockt2i" || command[0] == "/blockt2i@" + tgusername) {
+            if (msg.reply_to_message && blockt2i.indexOf(msg.reply_to_message.from.id) > -1) {
+                blockt2i.splice(blockt2i.indexOf(msg.reply_to_message.from.id), 1);
+                tg.sendMessage({
+                    text: "Temporary Unblocked " + msg.reply_to_message.from.username + " From Telegram to IRC!",
+                    chat_id: msg.chat.id
+                });
+            } else if (command[1] && !isNaN(command[1]) && blockt2i.indexOf(command[1]) > -1) {
+                blockt2i.splice(blockt2i.indexOf(command[1]), 1);
+                tg.sendMessage({
+                    text: "Temporary Unblocked " + command[1] + " From Telegram to IRC!",
+                    chat_id: msg.chat.id
+                });
+            } else {
+                tg.sendMessage({
+                    text: "Target Unspecified!",
+                    chat_id: msg.chat.id
+                });
+            }
+            return;
+        }
+    }
     var user, reply_to, forward_from, message_text;
-    if(!msg.text || msg.chat.id != config.tg_group_id)
+    
+    // Message Filter
+    if(!msg.text || msg.chat.id != config.tg_group_id || !enabled || msg.text.slice(0, 3) == '@@@')
         return;
+
+    // Blocking Enforcer
+    if (blockt2i.indexOf(msg.from.id) > -1)
+        return;
+
     user = format_name(msg.from.first_name, msg.from.last_name);
     if(msg.reply_to_message){
         if (msg.reply_to_message.from.id == tgid)
@@ -118,10 +224,14 @@ client.addListener('error', function(message) {
     console.log('error: ', message);
 });
 
+// Load blocklist
+blocki2t = config.blocki2t;
+blockt2i = config.blockt2i;
 
 tg.start();
 tg.getMe().then(function(ret){
     tgid = ret.result.id;
+    tgusername = ret.result.username;
 })
 client.join(config.irc_channel);
 
