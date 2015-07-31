@@ -138,7 +138,7 @@ tg.on('message', function(msg) {
                     chat_id: msg.chat.id
                 });
             } else if (command[1] && !isNaN(command[1]) && blockt2i.indexOf(command[1]) == -1) {
-                blockt2i.push(command[1]);
+                blockt2i.push(parseInt(command[1]));
                 tg.sendMessage({
                     text: "Temporary Blocked " + command[1] + " From Telegram to IRC!",
                     chat_id: msg.chat.id
@@ -171,8 +171,8 @@ tg.on('message', function(msg) {
                     text: "Temporary Unblocked " + msg.reply_to_message.from.username + " From Telegram to IRC!",
                     chat_id: msg.chat.id
                 });
-            } else if (command[1] && !isNaN(command[1]) && blockt2i.indexOf(command[1]) > -1) {
-                blockt2i.splice(blockt2i.indexOf(command[1]), 1);
+            } else if (command[1] && !isNaN(command[1]) && blockt2i.indexOf(parseInt(command[1])) > -1) {
+                blockt2i.splice(blockt2i.indexOf(parseInt(command[1])), 1);
                 tg.sendMessage({
                     text: "Temporary Unblocked " + command[1] + " From Telegram to IRC!",
                     chat_id: msg.chat.id
