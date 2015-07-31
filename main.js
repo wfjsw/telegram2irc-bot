@@ -138,7 +138,7 @@ tg.on('message', function(msg) {
                     chat_id: msg.chat.id
                 });
             } else if (command[1] && !isNaN(command[1]) && blockt2i.indexOf(command[1]) == -1) {
-                blockt2i.push(msg.reply_to_message.from.id);
+                blockt2i.push(command[1]);
                 tg.sendMessage({
                     text: "Temporary Blocked " + command[1] + " From Telegram to IRC!",
                     chat_id: msg.chat.id
@@ -184,6 +184,14 @@ tg.on('message', function(msg) {
                 });
             }
             return;
+        } else if (command[0] == "/reloadblocklist" || command[0] == "/reloadblocklist@" + tgusername) {
+            // Load blocklist
+            blocki2t = config.blocki2t;
+            blockt2i = config.blockt2i;
+            tg.sendMessage({
+                text: "Blocklist Reloaded!",
+                chat_id: msg.chat.id
+            });
         }
     }
     var user, reply_to, forward_from, message_text;
