@@ -164,7 +164,7 @@ tg.on('message', function(msg) {
                 });
             }
             return;
-        } else if (command[0] == "/blockt2i" || command[0] == "/blockt2i@" + tgusername) {
+        } else if (command[0] == "/unblockt2i" || command[0] == "/unblockt2i@" + tgusername) {
             if (msg.reply_to_message && blockt2i.indexOf(msg.reply_to_message.from.id) > -1) {
                 blockt2i.splice(blockt2i.indexOf(msg.reply_to_message.from.id), 1);
                 tg.sendMessage({
