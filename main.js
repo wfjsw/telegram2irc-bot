@@ -76,7 +76,7 @@ process.on('SIGINT', function(code) {
 
 client.addListener('message' + config.irc_channel, function (from, message) {
     console.log(printf('From IRC %1  --  %2', from, message));
-    
+
     // Blocking Enforcer
     if (blocki2t.indexOf(from) > -1 || !enabled)
         return;
@@ -113,9 +113,11 @@ client.addListener('action', function (from, to, text) {
 tg.on('message', function(msg) {
     // Process Commands.
     console.log(printf('From ID %1  --  %2', msg.chat.id, msg.text));
-    if (msg.text.slice(0, 1) == '/') {
-        var command = msg.text.split(' ');
-        if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
+   if(msg.photo){
+        console.log(msg);
+    } else if (msg.text.slice(0, 1) == '/') {
+        var command = msg.text.split(" ");
+        if (command[0] == "/hold" || command[0] == "/hold@" + tgusername) {
             tg.sendMessage({
                 text: '阿卡林黑洞已关闭！',
                 chat_id: msg.chat.id
@@ -209,7 +211,7 @@ tg.on('message', function(msg) {
         return;
     }
     var user, reply_to, forward_from, message_text;
-    
+
     // Message Filter
     if(!msg.text || msg.chat.id != config.tg_group_id || !enabled)
         return;
@@ -221,14 +223,14 @@ tg.on('message', function(msg) {
     user = format_name(msg.from.first_name, msg.from.last_name);
     if(msg.reply_to_message){
         if (msg.reply_to_message.from.id == tgid)
-            reply_to = msg.reply_to_message.text.match(/^\[([^\]\[]+)\]/)[1];
+            reply_to = msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
         else
             reply_to = format_name(msg.reply_to_message.from.first_name, msg.reply_to_message.from.last_name);
         message_text = format_newline(msg.text, user, reply_to, 'reply', true);
         message_text = printf('[%1] %2: %3', user, reply_to, message_text);
     } else if (msg.forward_from){
         if(msg.forward_from.id == tgid)
-            forward_from = msg.text.match(/^\[([^\]\[]+)\]/)[1];
+            forward_from = msg.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
         else
             forward_from = format_name(msg.forward_from.first_name, msg.forward_from.last_name);
         message_text = format_newline(msg.text, user, forward_from,
