@@ -193,6 +193,7 @@ tg.on('message', function(msg) {
                 chat_id: msg.chat.id
             });
         }
+        return;
     }
     var user, reply_to, forward_from, message_text;
     
