@@ -14,7 +14,9 @@ var client = new IRC.Client(config.irc_server, config.irc_nick, {
     channels: [config.irc_channel],
     sasl: config.irc_sasl,
     username: config.irc_username,
-    password: config.irc_password
+    password: config.irc_password,
+    floodProtection: true,
+    floodProtectionDelay: 1000
 });
 var tgid, tgusername;
 var enabled = true;
