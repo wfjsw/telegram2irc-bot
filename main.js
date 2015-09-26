@@ -13,6 +13,9 @@ var tg = new Telegram(config.tg_bot_api_key);
 var client = new IRC.Client(config.irc_server, config.irc_nick, {
     channels: [config.irc_channel],
     sasl: config.irc_sasl,
+    secure: config.irc_ssl,
+    selfSigned: config.irc_ssl_self_signed,
+    port: config.irc_port,
     username: config.irc_username,
     password: config.irc_password,
     floodProtection: true,

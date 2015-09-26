@@ -8,6 +8,9 @@ exports.tg_group_id = 0;
 exports.irc_server = '';
 exports.irc_channel = '';
 exports.irc_nick = '';
+exports.irc_port = 6667;
+exports.irc_ssl = false;
+exports.irc_ssl_self_signed = false;
 exports.irc_line_count_limit = 5;
 
 // Turn On IRC Nick Auth By set SASL to true
