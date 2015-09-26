@@ -45,7 +45,15 @@ function format_name(first_name, last_name) {
 }
 
 
-function format_newline(text, user, target, type) {
+function format_newline(text, user, target, type, limit) {
+    if(limit){
+	var arr = text.split('\n'); // ES6 block scope may be better
+	if(arr.length > config.irc_line_count_limit){
+	    arr = arr.slice(0, config.irc_line_count_limit);
+	    arr.push('(Line count limit exceeded)');
+	    text = arr.join('\n');
+	}
+    }
     if(type == 'reply')
         return text.replace(/\n/g, printf('\n[%1] %2: ', user, target));
     if(type == 'forward')
@@ -213,14 +221,15 @@ tg.on('message', function(msg) {
             reply_to = msg.reply_to_message.text.match(/^\[([^\]\[]+)\]/)[1];
         else
             reply_to = format_name(msg.reply_to_message.from.first_name, msg.reply_to_message.from.last_name);
-        message_text = format_newline(msg.text, user, reply_to, 'reply');
+        message_text = format_newline(msg.text, user, reply_to, 'reply', true);
         message_text = printf('[%1] %2: %3', user, reply_to, message_text);
     } else if (msg.forward_from){
         if(msg.forward_from.id == tgid)
             forward_from = msg.text.match(/^\[([^\]\[]+)\]/)[1];
         else
             forward_from = format_name(msg.forward_from.first_name, msg.forward_from.last_name);
-        message_text = format_newline(msg.text, user, forward_from, 'forward');
+        message_text = format_newline(msg.text, user, forward_from,
+				      'forward', true);
         message_text = printf('[%1] Fwd %2: %3', user, forward_from, message_text);
     } else {
         message_text = format_newline(msg.text, user);

@@ -8,13 +8,14 @@ exports.tg_group_id = 0;
 exports.irc_server = '';
 exports.irc_channel = '';
 exports.irc_nick = '';
+exports.irc_line_count_limit = 5;
 
 // Turn On IRC Nick Auth By set SASL to true
 exports.irc_sasl = false;
-exports.irc_username = ''; // Usually Same as irc_nick
+exports.irc_username = '';
 exports.irc_password = '';
 
 // Blocking Config
-exports.other_bridge_bots = []; //Auto hide prefix from these name
-exports.blocki2t = []; // Block specific user from IRC to Telegram, use nickname here.
-exports.blockt2i = []; // Block specific user from Telegram to IRC, use UserID here. Acquire ID by forward a user's message to @userinfobot.
+exports.other_bridge_bots = []; // Hide prefixes of these names automatically
+exports.blocki2t = []; // Block specific users from IRC to Telegram, use nickname here.
+exports.blockt2i = []; // Block specific users from Telegram to IRC, use UserID here. Acquire ID by forwarding a user's message to @userinfobot.
