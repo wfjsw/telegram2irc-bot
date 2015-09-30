@@ -9,6 +9,9 @@
 var Telegram = require('telegram-bot');
 var IRC = require('irc');
 var config = require('./config.js');
+var pvimcn = require("./pvimcn.js");
+var encoding = require("encoding");
+
 var tg = new Telegram(config.tg_bot_api_key);
 var client = new IRC.Client(config.irc_server, config.irc_nick, {
     channels: [config.irc_channel],
@@ -48,15 +51,8 @@ function format_name(first_name, last_name) {
 }
 
 
-function format_newline(text, user, target, type, limit) {
-    if(limit){
-	var arr = text.split('\n'); // ES6 block scope may be better
-	if(arr.length > config.irc_line_count_limit){
-	    arr = arr.slice(0, config.irc_line_count_limit);
-	    arr.push('(Line count limit exceeded)');
-	    text = arr.join('\n');
-	}
-    }
+function format_newline(text, user, target, type) {
+    text = text.replace(/(\s*\n\s*)+/g, "\n");
     if(type == 'reply')
         return text.replace(/\n/g, printf('\n[%1] %2: ', user, target));
     if(type == 'forward')
@@ -80,6 +76,13 @@ client.addListener('message' + config.irc_channel, function (from, message) {
     // Blocking Enforcer
     if (blocki2t.indexOf(from) > -1 || !enabled)
         return;
+
+    // say last context to irc
+    if (message.match(/\s*\\last\s*/)){
+        client.say(config.irc_channel, "Replied " + lastContext.name + ": " + lastContext.text);
+        console.log("Replied " + lastContext.name + ": " + lastContext.text);
+        return;
+    }
 
     if(config.other_bridge_bots.indexOf(from) == -1)
         message = printf('[%1] %2', from, message);
@@ -109,12 +112,31 @@ client.addListener('action', function (from, to, text) {
     }
 });
 
+// record last reply context
+var lastContext = {name:"", text:""};
 
 tg.on('message', function(msg) {
     // Process Commands.
     console.log(printf('From ID %1  --  %2', msg.chat.id, msg.text));
-   if(msg.photo){
-        console.log(msg);
+    if(msg.photo){
+        var largest = {file_size:0};
+        for(var i in msg.photo){
+            var p = msg.photo[i];
+            if(p.file_size > largest.file_size){
+                largest = p;
+            }
+        }
+        tg.getFile({file_id:largest.file_id}).then(function (ret){
+            if(ret.ok){
+                var url = printf("https://api.telegram.org/file/bot%1/%2",
+                    config.tg_bot_api_key, ret.result.file_path);
+                pvimcn.imgvim(url, function(err,ret){
+                    console.log(ret);
+                    var user = format_name(msg.from.first_name, msg.from.last_name);
+                    client.say(config.irc_channel, printf("[%1] Img: %2", user,ret));
+                });
+            }
+        });
     } else if (msg.text.slice(0, 1) == '/') {
         var command = msg.text.split(" ");
         if (command[0] == "/hold" || command[0] == "/hold@" + tgusername) {
@@ -226,7 +248,8 @@ tg.on('message', function(msg) {
             reply_to = msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
         else
             reply_to = format_name(msg.reply_to_message.from.first_name, msg.reply_to_message.from.last_name);
-        message_text = format_newline(msg.text, user, reply_to, 'reply', true);
+        lastContext = {text:msg.reply_to_message.text, name:reply_to};
+        message_text = format_newline(msg.text, user, reply_to, 'reply');
         message_text = printf('[%1] %2: %3', user, reply_to, message_text);
     } else if (msg.forward_from){
         if(msg.forward_from.id == tgid)
@@ -239,6 +262,24 @@ tg.on('message', function(msg) {
     } else {
         message_text = format_newline(msg.text, user);
         message_text = printf('[%1] %2', user, message_text);
+        if (msg.text.length <=10 && msg.text.match(/.*割一下.*/)){
+            // optimization for qiushibaike
+            message_text += "\n"+msg.text;
+        }
+        if (msg.text.split("\n").length > 5 ||
+                msg.text.split("\n").some(function (x){
+                    return encoding.convert(x, "utf-8").length > 400;
+                })){
+            console.log(printf("User [%1] send a long message"));
+            pvimcn.pvim(msg.text, function cb(err, result){
+                if(err){
+                    client.say(config.irc_channel, printf("[%1] %2", user, msg.text.replace(/\n/g, "\\n")));
+                }else{
+                    client.say(config.irc_channel, printf("Long Msg [%1] %2", user, result));
+                }
+            });
+            return;
+        }
     }
     client.say(config.irc_channel, message_text);
     //End of the sub process.
