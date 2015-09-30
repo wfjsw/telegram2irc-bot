@@ -47,7 +47,7 @@ function test(){
 
 
 function testImg(){
-  imgvim("https://api.telegram.org/file/bot103976582:AAHe8snrenVRjDo3uMRzEISAxqlX4RsR3BY/photo/file_14.jpg",
+  imgvim("https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png",
     function cb(err,url) {console.log(url);});
 }
 
