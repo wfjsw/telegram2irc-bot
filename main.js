@@ -9,8 +9,8 @@
 var Telegram = require('telegram-bot');
 var IRC = require('irc');
 var config = require('./config.js');
-var pvimcn = require("./pvimcn.js");
-var encoding = require("encoding");
+var pvimcn = require('./pvimcn.js');
+var encoding = require('encoding');
 
 var tg = new Telegram(config.tg_bot_api_key);
 var client = new IRC.Client(config.irc_server, config.irc_nick, {
@@ -52,7 +52,7 @@ function format_name(first_name, last_name) {
 
 
 function format_newline(text, user, target, type) {
-    text = text.replace(/(\s*\n\s*)+/g, "\n");
+    text = text.replace(/(\s*\n\s*)+/g, '\n');
     if(type == 'reply')
         return text.replace(/\n/g, printf('\n[%1] %2: ', user, target));
     if(type == 'forward')
@@ -79,8 +79,8 @@ client.addListener('message' + config.irc_channel, function (from, message) {
 
     // say last context to irc
     if (message.match(/\s*\\last\s*/)){
-        client.say(config.irc_channel, "Replied " + lastContext.name + ": " + lastContext.text);
-        console.log("Replied " + lastContext.name + ": " + lastContext.text);
+        client.say(config.irc_channel, 'Replied ' + lastContext.name + ': ' + lastContext.text);
+        console.log('Replied ' + lastContext.name + ': ' + lastContext.text);
         return;
     }
 
@@ -113,7 +113,7 @@ client.addListener('action', function (from, to, text) {
 });
 
 // record last reply context
-var lastContext = {name:"", text:""};
+var lastContext = {name:'', text:''};
 
 tg.on('message', function(msg) {
     // Process Commands.
@@ -128,18 +128,18 @@ tg.on('message', function(msg) {
         }
         tg.getFile({file_id:largest.file_id}).then(function (ret){
             if(ret.ok){
-                var url = printf("https://api.telegram.org/file/bot%1/%2",
+                var url = printf('https://api.telegram.org/file/bot%1/%2',
                     config.tg_bot_api_key, ret.result.file_path);
                 pvimcn.imgvim(url, function(err,ret){
                     console.log(ret);
                     var user = format_name(msg.from.first_name, msg.from.last_name);
-                    client.say(config.irc_channel, printf("[%1] Img: %2", user,ret));
+                    client.say(config.irc_channel, printf('[%1] Img: %2', user,ret));
                 });
             }
         });
     } else if (msg.text.slice(0, 1) == '/') {
-        var command = msg.text.split(" ");
-        if (command[0] == "/hold" || command[0] == "/hold@" + tgusername) {
+        var command = msg.text.split(' ');
+        if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
             tg.sendMessage({
                 text: '阿卡林黑洞已关闭！',
                 chat_id: msg.chat.id
@@ -264,18 +264,18 @@ tg.on('message', function(msg) {
         message_text = printf('[%1] %2', user, message_text);
         if (msg.text.length <=10 && msg.text.match(/.*割一下.*/)){
             // optimization for qiushibaike
-            message_text += "\n"+msg.text;
+            message_text += '\n'+msg.text;
         }
-        if (msg.text.split("\n").length > 5 ||
-                msg.text.split("\n").some(function (x){
-                    return encoding.convert(x, "utf-8").length > 400;
+        if (msg.text.split('\n').length > 5 ||
+                msg.text.split('\n').some(function (x){
+                    return encoding.convert(x, 'utf-8').length > 400;
                 })){
-            console.log(printf("User [%1] send a long message", user));
+            console.log(printf('User [%1] send a long message', user));
             pvimcn.pvim(msg.text, function cb(err, result){
                 if(err){
-                    client.say(config.irc_channel, printf("[%1] %2", user, msg.text.replace(/\n/g, "\\n")));
+                    client.say(config.irc_channel, printf('[%1] %2', user, msg.text.replace(/\n/g, '\\n')));
                 }else{
-                    client.say(config.irc_channel, printf("Long Msg [%1] %2", user, result));
+                    client.say(config.irc_channel, printf('Long Msg [%1] %2', user, result));
                 }
             });
             return;
