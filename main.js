@@ -10,7 +10,7 @@ var Telegram = require('telegram-bot');
 var IRC = require('irc');
 var config = require('./config.js');
 var pvimcn = require('./pvimcn.js');
-var encoding = require('encoding');
+
 
 var tg = new Telegram(config.tg_bot_api_key);
 var client = new IRC.Client(config.irc_server, config.irc_nick, {
@@ -79,8 +79,9 @@ client.addListener('message' + config.irc_channel, function (from, message) {
 
     // say last context to irc
     if (message.match(/\s*\\last\s*/)){
-        client.say(config.irc_channel, 'Replied ' + lastContext.name + ': ' + lastContext.text);
-        console.log('Replied ' + lastContext.name + ': ' + lastContext.text);
+	var last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
+	client.say(config.irc_channel, last_msg);
+        console.log(last_msg);
         return;
     }
 
@@ -118,15 +119,15 @@ var lastContext = {name:'', text:''};
 tg.on('message', function(msg) {
     // Process Commands.
     console.log(printf('From ID %1  --  %2', msg.chat.id, msg.text));
-    if(msg.photo){
-        var largest = {file_size:0};
+    if(config.irc_photo_forwarding_enabled && msg.photo){
+        var largest = {file_size: 0};
         for(var i in msg.photo){
             var p = msg.photo[i];
             if(p.file_size > largest.file_size){
                 largest = p;
             }
         }
-        tg.getFile({file_id:largest.file_id}).then(function (ret){
+        tg.getFile({file_id: largest.file_id}).then(function (ret){
             if(ret.ok){
                 var url = printf('https://api.telegram.org/file/bot%1/%2',
                     config.tg_bot_api_key, ret.result.file_path);
@@ -137,7 +138,7 @@ tg.on('message', function(msg) {
                 });
             }
         });
-    } else if (msg.text.slice(0, 1) == '/') {
+    } else if (msg.text[0] == '/') {
         var command = msg.text.split(' ');
         if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
             tg.sendMessage({
@@ -232,6 +233,7 @@ tg.on('message', function(msg) {
         }
         return;
     }
+
     var user, reply_to, forward_from, message_text;
 
     // Message Filter
@@ -248,7 +250,10 @@ tg.on('message', function(msg) {
             reply_to = msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
         else
             reply_to = format_name(msg.reply_to_message.from.first_name, msg.reply_to_message.from.last_name);
-        lastContext = {text:msg.reply_to_message.text, name:reply_to};
+        lastContext = {
+	    text: msg.reply_to_message.text,
+	    name: reply_to
+	};
         message_text = format_newline(msg.text, user, reply_to, 'reply');
         message_text = printf('[%1] %2: %3', user, reply_to, message_text);
     } else if (msg.forward_from){
@@ -260,27 +265,37 @@ tg.on('message', function(msg) {
 				      'forward', true);
         message_text = printf('[%1] Fwd %2: %3', user, forward_from, message_text);
     } else {
-        message_text = format_newline(msg.text, user);
-        message_text = printf('[%1] %2', user, message_text);
-        if (msg.text.length <=10 && msg.text.match(/.*割一下.*/)){
-            // optimization for qiushibaike
-            message_text += '\n'+msg.text;
+	var formated_msg_text = msg.text;
+	var arr = msg.text.split('\n');
+        if (arr.length > config.irc_line_count_limit ||
+            arr.some(function (line){
+                    return line.length > config.irc_message_length_limit;
+            })){
+
+	    if(config.irc_long_message_paste_enabled){
+		console.log(printf('User [%1] send a long message', user));
+		pvimcn.pvim(msg.text, function cb(err, result){
+                    if(err)
+			client.say(config.irc_channel,
+				   printf('[%1] %2', user,
+					  msg.text.replace(/\n/g, '\\n')));
+                    else
+			client.say(config.irc_channel,
+				   printf('Long Msg [%1] %2', user, result));
+		});
+		return;
+	    }else{
+		arr.map(function (line){
+		    return line.slice(0, config.irc_message_length_limit);
+		});
+		arr = arr.slice(0, config.irc_line_count_limit);
+		formatted_msg_text = arr.join('\n');
+	    }
         }
-        if (msg.text.split('\n').length > 5 ||
-                msg.text.split('\n').some(function (x){
-                    return encoding.convert(x, 'utf-8').length > 400;
-                })){
-            console.log(printf('User [%1] send a long message', user));
-            pvimcn.pvim(msg.text, function cb(err, result){
-                if(err){
-                    client.say(config.irc_channel, printf('[%1] %2', user, msg.text.replace(/\n/g, '\\n')));
-                }else{
-                    client.say(config.irc_channel, printf('Long Msg [%1] %2', user, result));
-                }
-            });
-            return;
-        }
+	message_text = format_newline(formatted_msg_text, user);
+	message_text = printf('[%1] %2', user, message_text);
     }
+
     client.say(config.irc_channel, message_text);
     //End of the sub process.
 });
