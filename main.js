@@ -138,7 +138,7 @@ tg.on('message', function(msg) {
                 });
             }
         });
-    } else if (msg.text[0] == '/') {
+    } else if (msg.text.slice(0, 1) == '/') {
         var command = msg.text.split(' ');
         if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
             tg.sendMessage({
@@ -265,7 +265,7 @@ tg.on('message', function(msg) {
 				      'forward', true);
         message_text = printf('[%1] Fwd %2: %3', user, forward_from, message_text);
     } else {
-	var formated_msg_text = msg.text;
+	var formatted_msg_text = msg.text;
 	var arr = msg.text.split('\n');
         if (arr.length > config.irc_line_count_limit ||
             arr.some(function (line){
