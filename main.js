@@ -138,7 +138,7 @@ tg.on('message', function(msg) {
                 });
             }
         });
-    } else if (msg.text.slice(0, 1) == '/') {
+    } else if (msg.text && msg.text.slice(0, 1) == '/') {
         var command = msg.text.split(' ');
         if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
             tg.sendMessage({
