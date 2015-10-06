@@ -288,7 +288,10 @@ tg.on('message', function(msg) {
 		arr.map(function (line){
 		    return line.slice(0, config.irc_message_length_limit);
 		});
-		arr = arr.slice(0, config.irc_line_count_limit);
+		if(arr.length > config.irc_line_count_limit){
+		    arr = arr.slice(0, config.irc_line_count_limit);
+		    arr.push("(line count limit exceeded)");
+		}
 		formatted_msg_text = arr.join('\n');
 	    }
         }
