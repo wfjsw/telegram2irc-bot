@@ -1,10 +1,10 @@
 'use strict';
 
-var request = require("request");
-var fs = require("fs");
+var request = require('request');
+var fs = require('fs');
 
 function pvim(message, cb){
-    if(message.length <= "print(#Hello, world!#)"){
+    if(message.length <= 'print(#Hello, world!#)'){
       cb(true, message);
       return;
     }
@@ -42,12 +42,12 @@ function imgvim(url, cb){
 }
 
 function test(){
-    pvim("testing\nabc\nadd\nethis is a log message", function cb(url) {console.log(url);});
+    pvim('testing\nabc\nadd\nethis is a log message', function cb(url) {console.log(url);});
 }
 
 
 function testImg(){
-  imgvim("https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png",
+  imgvim('https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png',
     function cb(err,url) {console.log(url);});
 }
 
