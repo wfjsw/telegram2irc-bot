@@ -8,7 +8,7 @@ Create a config file `config.js` just like the example `config.js.example` and s
 
 ## Image forwarding
 
-Due to the upstream has not updated yet, you have to hack the library `telegram-bot` if you want to enable image forwarding.
+Because the upstream has not updated yet, you have to hack the library `telegram-bot` if you want to enable image forwarding.
 
 In `node_modules/telegram-bot/lib/telegram.js`:
 
