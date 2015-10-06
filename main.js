@@ -270,7 +270,7 @@ tg.on('message', function(msg) {
                 msg.text.split("\n").some(function (x){
                     return encoding.convert(x, "utf-8").length > 400;
                 })){
-            console.log(printf("User [%1] send a long message"));
+            console.log(printf("User [%1] send a long message", user));
             pvimcn.pvim(msg.text, function cb(err, result){
                 if(err){
                     client.say(config.irc_channel, printf("[%1] %2", user, msg.text.replace(/\n/g, "\\n")));
