@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env node --harmony
 
 // Total hours wasted here -> 12
 // ^ Do Not Remove This!
@@ -79,7 +79,7 @@ client.addListener('message' + config.irc_channel, function (from, message) {
 
     // say last context to irc
     if (message.match(/\s*\\last\s*/)){
-	var last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
+	let last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
 	client.say(config.irc_channel, last_msg);
         console.log(last_msg);
         return;
@@ -120,26 +120,26 @@ tg.on('message', function(msg) {
     // Process Commands.
     console.log(printf('From ID %1  --  %2', msg.chat.id, msg.text));
     if(config.irc_photo_forwarding_enabled && msg.photo){
-        var largest = {file_size: 0};
-        for(var i in msg.photo){
-            var p = msg.photo[i];
+        let largest = {file_size: 0};
+        for(let i in msg.photo){
+            let p = msg.photo[i];
             if(p.file_size > largest.file_size){
                 largest = p;
             }
         }
         tg.getFile({file_id: largest.file_id}).then(function (ret){
             if(ret.ok){
-                var url = printf('https://api.telegram.org/file/bot%1/%2',
+                let url = printf('https://api.telegram.org/file/bot%1/%2',
                     config.tg_bot_api_key, ret.result.file_path);
                 pvimcn.imgvim(url, function(err,ret){
                     console.log(ret);
-                    var user = format_name(msg.from.first_name, msg.from.last_name);
+                    let user = format_name(msg.from.first_name, msg.from.last_name);
                     client.say(config.irc_channel, printf('[%1] Img: %2', user,ret));
                 });
             }
         });
     } else if (msg.text && msg.text.slice(0, 1) == '/') {
-        var command = msg.text.split(' ');
+        let command = msg.text.split(' ');
         if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
             tg.sendMessage({
                 text: '阿卡林黑洞已关闭！',
@@ -265,8 +265,8 @@ tg.on('message', function(msg) {
 				      'forward', true);
         message_text = printf('[%1] Fwd %2: %3', user, forward_from, message_text);
     } else {
-	var formatted_msg_text = msg.text;
-	var arr = msg.text.split('\n');
+	let formatted_msg_text = msg.text;
+	let arr = msg.text.split('\n');
         if (arr.length > config.irc_line_count_limit ||
             arr.some(function (line){
                     return line.length > config.irc_message_length_limit;
