@@ -1,10 +1,10 @@
 # orz-telegram-bot
 
-A Telegram-IRC sync bot.
+A Telegram-IRC sync bot
 
 ## Usage
 
-Create a config file `config.js` just like the example `config.js.example` and set your configuration, then run `main.js` to start.
+Create a config file `config.json` just like the example `config.json.example` and set your configuration, then run `main.js` to start.
 
 ## Image forwarding
 
