@@ -1,0 +1,28 @@
+{
+    "tgbot": {
+    	"token": "",
+	"group_id": 0
+    },
+    "irc": {
+    	"server": "",
+	"channel": "",
+	"nick": "",
+	"port": 6667,
+	"ssl": false,
+	"ssl_self_signed": false
+	"sasl": false,
+	"username": "",
+	"password": ""
+    },
+    "forward": {
+	"line_count_limit": 5,
+	"message_length_limit": 400,
+	"paste_long_message": false,
+	"photo_enabled": false
+    },
+    "block": {
+	"hide_nick_prefix": [],
+	"irc2tg": [],
+	"tg2irc": []
+    }
+}
