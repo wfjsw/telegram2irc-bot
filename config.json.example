@@ -9,7 +9,7 @@
 	"nick": "",
 	"port": 6667,
 	"ssl": false,
-	"ssl_self_signed": false
+	"ssl_self_signed": false,
 	"sasl": false,
 	"username": "",
 	"password": ""
