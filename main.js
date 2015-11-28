@@ -1,4 +1,4 @@
-#!/usr/bin/env node --harmony
+#!/usr/bin/env node
 
 // Total hours wasted here -> 12
 // ^ Do Not Remove This!
