@@ -76,6 +76,10 @@ function parse_command(command, msg, arg){
 	command = arr[0];
 
     switch(command){
+    case '/reconnect':
+	client.disconnect('Reconnect', function(){
+	    client.connect();
+	});
     case '/hold':
         reply('Forwarding has been disabled!');
         enabled = false;
