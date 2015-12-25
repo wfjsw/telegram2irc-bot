@@ -230,6 +230,13 @@ tg.on('message', function(msg) {
                 text: 'Blocklist Reloaded!',
                 chat_id: msg.chat.id
             });
+            return;
+        } else if (command[0] == '/ircsay' || command[0] == '/ircsay@' + tgusername) {
+            var txtn;
+            command.shift();
+            txtn = command.join(" ");
+            client.say(config.irc_channel, txtn);
+            return;
         }
         return;
     }
