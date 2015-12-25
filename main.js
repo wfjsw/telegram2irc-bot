@@ -26,18 +26,19 @@ var client = new IRC.Client(config.irc_server, config.irc_nick, {
 });
 var tgid, tgusername;
 var enabled = true;
-var blocki2t = [];
-var blockt2i = [];
+var blocki2t = new Array();
+var blockt2i = new Array();
+var msgfilter = function (s) { return s; };
 
 
-function printf(){
-    var str = arguments[0];
-    var args = arguments;
-    str = str.replace(/%(\d+)|%{(\d+)}/g, function(match, number1, number2){
-	var number = number1? number1: number2;
-	return (typeof args[number] != 'undefined')? args[number]: match;
-    });
-    return str;
+function printf(args) {
+    var string = arguments[0];
+    /* note that %n in the string must be in ascending order */
+    /* like 'Foo %1 Bar %2 %3' */
+    var i;
+    for(i=arguments.length-1; i>0; i--)
+        string = string.replace('%'+i, arguments[i]);
+    return string;
 }
 
 
@@ -305,8 +306,7 @@ tg.on('message', function(msg) {
 	message_text = format_newline(formatted_msg_text, user);
 	message_text = printf('[%1] %2', user, message_text);
     }
-
-    client.say(config.irc_channel, message_text);
+    client.say(config.irc_channel, msgfilter(message_text));
     //End of the sub process.
 });
 
@@ -318,6 +318,11 @@ client.addListener('error', function(message) {
 // Load blocklist
 blocki2t = config.blocki2t;
 blockt2i = config.blockt2i;
+
+// init message filter
+if (typeof (config.tg_msg_filter) === 'function') {
+    msgfilter = config.tg_msg_filter;
+}
 
 tg.start();
 tg.getMe().then(function(ret){
