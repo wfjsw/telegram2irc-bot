@@ -3,6 +3,8 @@
 // Telegram-Bot Config
 exports.tg_bot_api_key = '';
 exports.tg_group_id = 0;
+/** filter function (string) -> (string) */
+exports.tg_msg_filter = function (s) { return s.replace('wfjsw','wfj.js'); }
 
 // IRC Config
 exports.irc_server = '';
@@ -26,6 +28,10 @@ exports.irc_long_message_paste_enabled = false;
 exports.irc_photo_forwarding_enabled = false;
 
 // Blocking Config
-exports.other_bridge_bots = []; // Hide prefixes of these names automatically
-exports.blocki2t = []; // Block specific users from IRC to Telegram, use nickname here.
-exports.blockt2i = []; // Block specific users from Telegram to IRC, use UserID here. Acquire ID by forwarding a user's message to @userinfobot.
+/** Hide prefixes of these names automatically */
+exports.other_bridge_bots = [];
+/** Block specific users from IRC to Telegram, use nickname here. */
+exports.blocki2t = [];
+/** Block specific users from Telegram to IRC, use UserID here. 
+ *  Acquire ID by forwarding a user's message to @userinfobot. */
+exports.blockt2i = []; 
