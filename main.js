@@ -82,6 +82,9 @@ process.on('SIGTERM', function (code) {
 });
 // End Exit Event.
 
+// record last reply context
+var lastContext = {name:"", text:"", byname:""};
+
 
 irc_c.addListener('message' + config.irc_channel, function (from, message) {
     console.log(printf('From IRC %1  --  %2', from, message));
@@ -119,9 +122,6 @@ irc_c.addListener('action', function (from, to, text) {
         tg.sendMessage(config.tg_group_id, text, { parse_mode: 'Markdown' });
     }
 });
-
-// record last reply context
-var lastContext = {name:'', text:''};
 
 tg.on('message', function(msg) {
     // Process Commands.
@@ -258,8 +258,7 @@ tg.on('message', function(msg) {
             return;
         }
     }
-
-    var user, reply_to, forward_from, message_text;
+    var user, reply_to, text, forward_from, message_text;
 
     // Message Filter
     if(!msg.text || msg.chat.id != config.tg_group_id || !enabled || msg.date < inittime)
@@ -271,14 +270,14 @@ tg.on('message', function(msg) {
 
     user = format_name(msg.from.first_name, msg.from.last_name);
     if(msg.reply_to_message){
-        if (msg.reply_to_message.from.id == tgid)
+        if (msg.reply_to_message.from.id == tgid){
             reply_to = msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
-        else
+            text = msg.reply_to_message.text.substr(reply_to.length+3);
+        }else{
             reply_to = format_name(msg.reply_to_message.from.first_name, msg.reply_to_message.from.last_name);
-        lastContext = {
-	    text: msg.reply_to_message.text,
-	    name: reply_to
-	};
+            text = msg.reply_to_message.text;
+        }
+        lastContext = {text:text, name:reply_to, byname: user};
         message_text = format_newline(msg.text, user, reply_to, 'reply');
         message_text = printf('[%1] %2: %3', user, reply_to, message_text);
     } else if (msg.forward_from){
