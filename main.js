@@ -11,11 +11,12 @@ var version = "`PROJECT AKARIN VERSION 20160129`";
 var Telegram = require('node-telegram-bot-api');
 var IRC = require('irc');
 var config = require('./config.js');
-var pvimcn = require('./pvimcn.js');
-
+var pvimcn = require("./pvimcn.js");
+var encoding = require("encoding");
+var nickmap = require("./nickmap.js");
 
 var tg = new Telegram(config.tg_bot_api_key, { polling: true });
-var irc_c = new IRC.irc_c(config.irc_server, config.irc_nick, {
+var irc_c = new IRC.Client(config.irc_server, config.irc_nick, {
     channels: [config.irc_channel],
     sasl: config.irc_sasl,
     secure: config.irc_ssl,
@@ -49,8 +50,9 @@ function format_name(first_name, last_name) {
     var full_name = last_name?
         first_name + ' ' + last_name:
         first_name;
-    if(full_name.length > 20)
-        full_name = full_name.slice(0, 20);
+    full_name = nickmap.getNick(full_name);
+    if(full_name.length > 24)
+        full_name = full_name.slice(0, 24);
     return full_name;
 }
 
@@ -123,6 +125,7 @@ var lastContext = {name:'', text:''};
 
 tg.on('message', function(msg) {
     // Process Commands.
+    var me_message = false;
     console.log(printf('From ID %1  --  %2', msg.chat.id, msg.text));
     if(config.irc_photo_forwarding_enabled && msg.photo){
         var largest = {file_size: 0};
@@ -212,9 +215,48 @@ tg.on('message', function(msg) {
             return;
         } else if (command[0] == '/syn' || command[0] == '/syn@' + tgusername) {
             tg.sendMessage(msg.chat.id, "`ACK`", { parse_mode: 'Markdown' });
+        } else if (command[0] == '/nick' || command[0] == '/nick@' + tgusername) {
+            // Load blocklist
+            if(command[1]){
+                var nick=command.slice(1).join(" ");
+                var first_name = msg.from.first_name;
+                var last_name = msg.from.last_name;
+                var full_name = last_name?
+                        first_name + ' ' + last_name:
+                        first_name;
+                nickmap.setNick(full_name, nick);
+
+                var notifymsg = printf("User \"%1\" changed nick to \"%2\"", full_name, nick);
+                tg.sendMessage({
+                    text: notifymsg,
+                    chat_id: msg.chat.id
+                });
+
+                client.say(config.irc_channel, notifymsg);
+            }else{
+                var first_name = msg.from.first_name;
+                var last_name = msg.from.last_name;
+                var full_name = last_name?
+                        first_name + ' ' + last_name:
+                        first_name;
+                var nick = nickmap.getNick(full_name);
+
+                var notifymsg = printf("User \"%1\" has nick \"%2\"", full_name, nick);
+
+                tg.sendMessage({
+                    text: notifymsg,
+                    chat_id: msg.chat.id
+                });
+            }
+
+            return;
+        } else if (command[0] == '/me' || command[0] == '/me@' + tgusername) {
+            me_message = true;
+            msg.text = msg.text.substring(command[0].length);
+            // passthrough to allow /me action
+        } else {
             return;
         }
-        return;
     }
 
     var user, reply_to, forward_from, message_text;
@@ -281,7 +323,11 @@ tg.on('message', function(msg) {
 	message_text = format_newline(formatted_msg_text, user);
 	message_text = printf('[%1] %2', user, message_text);
     }
-    irc_c.say(config.irc_channel, msgfilter(message_text));
+    if(me_message){
+        client.action(config.irc_channel, message_text);
+    }else{
+        client.say(config.irc_channel, message_text);
+    }
     //End of the sub process.
 });
 
