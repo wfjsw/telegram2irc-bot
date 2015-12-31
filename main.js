@@ -8,6 +8,7 @@
 
 var Telegram = require('telegram-bot');
 var IRC = require('irc');
+var JsonFile = require('jsonfile')
 var pvimcn = require('./pvimcn.js');
 var config = require('./config.json');
 
@@ -26,6 +27,7 @@ var client = new IRC.Client(config.irc.server, config.irc.nick, {
 });
 var tgid, tgusername;
 var enabled = true;
+var nick_map = {};
 var block = {
     irc2tg: [],
     tg2irc: []
@@ -43,13 +45,11 @@ function printf(){
 }
 
 
-function format_name(first_name, last_name) {
-    var full_name = last_name?
-        first_name + ' ' + last_name:
-        first_name;
-    if(full_name.length > 20)
-        full_name = full_name.slice(0, 20);
-    return full_name;
+function get_nick(user){
+    if(nick_map[user.id])
+	return nick_map[user.id];
+    else
+	return user.username;
 }
 
 
@@ -76,10 +76,29 @@ function parse_command(command, msg, arg){
 	command = arr[0];
 
     switch(command){
+    case: '/nick':
+	if(arg){
+	    let prev_name = msg.from.username;
+	    if(nick_map[msg.from.id])
+		prev_name = nick_map[msg.from.id];
+	    nick_map[msg.from.id] = arg;
+	    Jsonfile.writeFileSync(config.forward.nick_map_file, nick_map);
+	    client.say(printf('%1 is now known as %2', prev_name, arg));
+	    tg.sendMessage({
+		chat_id: config.tgbot.group_id,
+		text: 'Your nick name has been changed successfully!',
+		reply_to_message_id: msg.message_id
+	    });
+	}
+	break;
+    case '/ircsay':
+	client.say(config.irc.channel, arg);
+	break;
     case '/reconnect':
 	client.disconnect('Reconnect', function(){
 	    client.connect();
 	});
+	break;
     case '/hold':
         reply('Forwarding has been disabled!');
         enabled = false;
@@ -214,7 +233,7 @@ tg.on('message', function(msg) {
                     config.tgbot.token, ret.result.file_path);
                 pvimcn.imgvim(url, function(err,ret){
                     console.log(ret);
-                    let user = format_name(msg.from.first_name, msg.from.last_name);
+                    let user = get_nick(msg.from);
                     client.say(config.irc.channel, printf('[%1] Img: %2', user,ret));
                 });
             }
@@ -235,12 +254,12 @@ tg.on('message', function(msg) {
     if (block.tg2irc.indexOf(msg.from.id) > -1 || msg.text.slice(0, 3) == '@@@')
         return;
 
-    user = format_name(msg.from.first_name, msg.from.last_name);
+    user = get_nick(msg.from);
     if(msg.reply_to_message){
         if (msg.reply_to_message.from.id == tgid)
             reply_to = msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
         else
-            reply_to = format_name(msg.reply_to_message.from.first_name, msg.reply_to_message.from.last_name);
+            reply_to = get_nick(msg.reply_to_message.from);
         lastContext = {
 	    text: msg.reply_to_message.text,
 	    name: reply_to
@@ -251,7 +270,7 @@ tg.on('message', function(msg) {
         if(msg.forward_from.id == tgid)
             forward_from = msg.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
         else
-            forward_from = format_name(msg.forward_from.first_name, msg.forward_from.last_name);
+            forward_from = get_nick(msg.forward_from);
         message_text = format_newline(msg.text, user, forward_from,
 				      'forward', true);
         message_text = printf('[%1] Fwd %2: %3', user, forward_from, message_text);
@@ -302,6 +321,9 @@ client.addListener('error', function(message) {
 // Load blocklist
 block.irc2tg = config.block.irc2tg;
 block.tg2irc = config.block.tg2irc;
+
+// Load nick map
+nick_map = Jsonfile.readFileSync(config.forward.nick_map_file);
 
 tg.start();
 tg.getMe().then(function(ret){

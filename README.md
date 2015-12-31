@@ -2,6 +2,10 @@
 
 A Telegram-IRC sync bot
 
+## Dependencies
+
+`telegram-bot` `irc` `jsonfile`
+
 ## Usage
 
 Create a config file `config.json` just like the example `config.json.example` and set your configuration, then run `main.js` to start.

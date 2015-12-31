@@ -15,6 +15,7 @@
 	"password": ""
     },
     "forward": {
+    	"nick_map_file": "nick_map.json",
 	"line_count_limit": 5,
 	"message_length_limit": 400,
 	"paste_long_message": false,
