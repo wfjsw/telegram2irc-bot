@@ -82,7 +82,7 @@ function parse_command(command, msg, arg){
 	    if(nick_map[msg.from.id])
 		prev_name = nick_map[msg.from.id];
 	    nick_map[msg.from.id] = arg;
-	    Jsonfile.writeFileSync(config.forward.nick_map_file, nick_map);
+	    JsonFile.writeFileSync(config.forward.nick_map_file, nick_map);
 	    client.say(printf('%1 is now known as %2', prev_name, arg));
 	    tg.sendMessage({
 		chat_id: config.tgbot.group_id,
@@ -323,7 +323,7 @@ block.irc2tg = config.block.irc2tg;
 block.tg2irc = config.block.tg2irc;
 
 // Load nick map
-nick_map = Jsonfile.readFileSync(config.forward.nick_map_file);
+nick_map = JsonFile.readFileSync(config.forward.nick_map_file);
 
 tg.start();
 tg.getMe().then(function(ret){
