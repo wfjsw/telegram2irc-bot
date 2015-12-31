@@ -76,7 +76,7 @@ function parse_command(command, msg, arg){
 	command = arr[0];
 
     switch(command){
-    case: '/nick':
+    case '/nick':
 	if(arg){
 	    let prev_name = msg.from.username;
 	    if(nick_map[msg.from.id])
