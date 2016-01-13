@@ -123,6 +123,25 @@ irc_c.addListener('action', function (from, to, text) {
     }
 });
 
+function sendimg(fileid, msg, type){
+    tg.sendChatAction({chat_id: msg.chat.id, action: 'upload_photo'});
+    tg.getFile({file_id: fileid}).then(function (ret){
+        if(ret.ok){
+            var url = printf("https://api.telegram.org/file/bot%1/%2",
+                config.tg_bot_api_key, ret.result.file_path);
+            pvimcn.imgvim(url, function(err,ret){
+                console.log(ret);
+                var user = format_name(msg.from.first_name, msg.from.last_name);
+                if (msg.caption){
+                    client.say(config.irc_channel, printf("[%1] %2: %3 Saying: %4", user, type, ret.trim(), msg.caption));
+                }else{
+                    client.say(config.irc_channel, printf("[%1] %2: %3", user, type, ret.trim()));
+                }
+            });
+        }
+    });
+}
+
 tg.on('message', function(msg) {
     // Process Commands.
     var me_message = false;
@@ -135,14 +154,19 @@ tg.on('message', function(msg) {
                 largest = p;
             }
         }
-        tg.getFileLink(largest.file_id).then(function (filelink){
-            var url = filelink;
-            pvimcn.imgvim(url, function(err,ret){
-                console.log(ret);
-                var user = format_name(msg.from.first_name, msg.from.last_name);
-                irc_c.say(config.irc_channel, printf('[%1] Img: %2', user,ret));
+        sendimg(largest.file_id, msg, 'Img');
+    } else if (msg.sticker){
+        sendimg(msg.sticker.file_id, msg, 'Sticker');
+    } else if (msg.document){
+        sendimg(msg.document.file_id, msg, printf('File(%1)', msg.document.mime_type));
+    } else if (msg.text.slice(0, 1) == '/') {
+        var command = msg.text.split(" ");
+        if (command[0] == "/hold" || command[0] == "/hold@" + tgusername) {
+            tg.sendMessage({
+                text: '阿卡林黑洞已关闭！',
+                chat_id: msg.chat.id
             });
-        });
+        };
     } else if (msg.text && msg.text.slice(0, 1) == '/') {
         var command = msg.text.split(' ');
         if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
@@ -276,6 +300,7 @@ tg.on('message', function(msg) {
         }else{
             reply_to = format_name(msg.reply_to_message.from.first_name, msg.reply_to_message.from.last_name);
             text = msg.reply_to_message.text;
+            text = text ? text : "Img";
         }
         lastContext = {text:text, name:reply_to, byname: user};
         message_text = format_newline(msg.text, user, reply_to, 'reply');
@@ -330,10 +355,47 @@ tg.on('message', function(msg) {
     //End of the sub process.
 });
 
+var nicks = null;
+
+client.addListener('names', function(channel, newnicks){
+    nicks = newnicks;
+});
+
+tg.on("inline_query", function(msg){
+    console.log("inline_query: id="+msg.id+" query="+msg.query+" offset="+msg.offset);
+    var user = format_name(msg.from.first_name, msg.from.last_name);
+    var results = [];
+    var offset = msg.offset ? msg.offset : 0;
+
+    var next_offset = offset+50 ;
+    if (offset+50 < Object.keys(nicks).length)
+        next_offset = "";
+    var names = Object.keys(nicks).slice(offset, offset+50);
+
+    for(var i in names){
+        var key = names[i];
+        results.push({
+            type:"article",
+            id: msg.id+"/"+key,
+            title: ""+nicks[key]+key,
+            description: "预览: " + key + ": "+ msg.query,
+            message_text: key + ": "+ msg.query
+        });
+    }
+    tg.answerInlineQuery({
+       inline_query_id: ""+msg.id,
+       cache_time: 10,
+       is_personal: false,
+       next_offset: next_offset,
+       results: results
+    });
+});
 
 irc_c.addListener('error', function(message) {
     console.log('error: ', message);
 });
+
+
 
 // Load blocklist
 blocki2t = config.blocki2t;
