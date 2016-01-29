@@ -60,9 +60,41 @@ function format_name(first_name, last_name) {
 function format_newline(text, user, target, type) {
     text = text.replace(/(\s*\n\s*)+/g, '\n');
     if(type == 'reply')
-        return text.replace(/\n/g, printf('\n[%1] %2: ', user, target));
+        text = text.replace(/\n/g, printf('\n[%1] %2: ', user, target));
     if(type == 'forward')
-        return text.replace(/\n/g, printf('\n[%1] Fwd %2: ', user, target));
+        text = text.replace(/\n/g, printf('\n[%1] Fwd %2: ', user, target));
+
+    var arr = text.split('\n');
+    if (arr.length > config.irc_line_count_limit ||
+        arr.some(function (line){
+                return line.length > config.irc_message_length_limit;
+        })){
+
+        if(config.irc_long_message_paste_enabled){
+            console.log(printf('User [%1] send a long message', user));
+            pvimcn.pvim(text, function cb(err, result){
+                console.log("pvim result: "+ result);
+                if(err)
+                    irc_c.say(config.irc_channel,
+                               printf('[%1] %2', user,
+                                      text.replace(/\n/g, '\\n')));
+                else
+                    irc_c.say(config.irc_channel,
+                               printf('Long Msg [%1] %2', user, result));
+            });
+            return null;
+        }else{
+            arr.map(function (line){
+                return line.slice(0, config.irc_message_length_limit);
+            });
+            if(arr.length > config.irc_line_count_limit){
+                arr = arr.slice(0, config.irc_line_count_limit);
+                arr.push("(line count limit exceeded)");
+            }
+            text = arr.join('\n');
+        }
+    }
+
     return text.replace(/\n/g, printf('\n[%1] ', user));
 }
 
@@ -314,6 +346,7 @@ tg.on('message', function(msg) {
         }
         lastContext = {text:text, name:reply_to, byname: user};
         message_text = format_newline(msg.text, user, reply_to, 'reply');
+        if(message_text === null) return;
         message_text = printf('[%1] %2: %3', user, reply_to, message_text);
     } else if (msg.forward_from){
         if(msg.forward_from.id == tgid)
@@ -321,41 +354,13 @@ tg.on('message', function(msg) {
         else
             forward_from = format_name(msg.forward_from.first_name, msg.forward_from.last_name);
         message_text = format_newline(msg.text, user, forward_from,
-				      'forward', true);
+                                      'forward', true);
+        if(message_text === null) return;
         message_text = printf('[%1] Fwd %2: %3', user, forward_from, message_text);
     } else {
-	var formatted_msg_text = msg.text;
-	var arr = msg.text.split('\n');
-        if (arr.length > config.irc_line_count_limit ||
-            arr.some(function (line){
-                    return line.length > config.irc_message_length_limit;
-            })){
-
-	    if(config.irc_long_message_paste_enabled){
-		console.log(printf('User [%1] send a long message', user));
-		pvimcn.pvim(msg.text, function cb(err, result){
-                    if(err)
-			irc_c.say(config.irc_channel,
-				   printf('[%1] %2', user,
-					  msg.text.replace(/\n/g, '\\n')));
-                    else
-			irc_c.say(config.irc_channel,
-				   printf('Long Msg [%1] %2', user, result));
-		});
-		return;
-	    }else{
-		arr.map(function (line){
-		    return line.slice(0, config.irc_message_length_limit);
-		});
-		if(arr.length > config.irc_line_count_limit){
-		    arr = arr.slice(0, config.irc_line_count_limit);
-		    arr.push("(line count limit exceeded)");
-		}
-		formatted_msg_text = arr.join('\n');
-	    }
-        }
-	message_text = format_newline(formatted_msg_text, user);
-	message_text = printf('[%1] %2', user, message_text);
+        message_text = format_newline(msg.text, user);
+        if(message_text === null) return;
+        message_text = printf('[%1] %2', user, message_text);
     }
     if(me_message){
         irc_c.action(config.irc_channel, message_text);
