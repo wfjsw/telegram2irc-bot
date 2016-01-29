@@ -3,17 +3,19 @@
 // Total hours wasted here -> 12
 // ^ Do Not Remove This!
 
+var version = "`PROJECT AKARIN VERSION 20160129`";
+
 'use strict';
 
 
-var Telegram = require('telegram-bot');
+var Telegram = require('node-telegram-bot-api');
 var IRC = require('irc');
 var config = require('./config.js');
 var pvimcn = require('./pvimcn.js');
 
 
-var tg = new Telegram(config.tg_bot_api_key);
-var client = new IRC.Client(config.irc_server, config.irc_nick, {
+var tg = new Telegram(config.tg_bot_api_key, { polling: true });
+var irc_c = new IRC.irc_c(config.irc_server, config.irc_nick, {
     channels: [config.irc_channel],
     sasl: config.irc_sasl,
     secure: config.irc_ssl,
@@ -29,6 +31,7 @@ var enabled = true;
 var blocki2t = new Array();
 var blockt2i = new Array();
 var msgfilter = function (s) { return s; };
+var inittime = Math.round(new Date().getTime() / 1000);
 
 
 function printf(args) {
@@ -63,15 +66,22 @@ function format_newline(text, user, target, type) {
 
 
 // Event to write config on exit.
-process.on('SIGINT', function(code) {
+process.on('SIGINT', function (code) {
     console.log('About to exit with code:', code);
-    client.part(config.irc_channel);
+    tg.sendMessage(config.tg_group_id, "`COMMITING INTERRUPT`", { parse_mode: 'markdown' });
+    irc_c.part(config.irc_channel);
+    process.exit();
+});
+process.on('SIGTERM', function (code) {
+    console.log('About to exit with code:', code);
+    tg.sendMessage(config.tg_group_id, "`COMMITING TERMINATE`", { parse_mode: 'markdown' });
+    irc_c.part(config.irc_channel);
     process.exit();
 });
 // End Exit Event.
 
 
-client.addListener('message' + config.irc_channel, function (from, message) {
+irc_c.addListener('message' + config.irc_channel, function (from, message) {
     console.log(printf('From IRC %1  --  %2', from, message));
 
     // Blocking Enforcer
@@ -81,21 +91,18 @@ client.addListener('message' + config.irc_channel, function (from, message) {
     // say last context to irc
     if (message.match(/\s*\\last\s*/)){
 	var last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
-	client.say(config.irc_channel, last_msg);
+	irc_c.say(config.irc_channel, last_msg);
         console.log(last_msg);
         return;
     }
 
     if(config.other_bridge_bots.indexOf(from) == -1)
-        message = printf('[%1] %2', from, message);
-    tg.sendMessage({
-        text: message,
-        chat_id: config.tg_group_id
-    });
+        message = printf('`[%1]` %2', from, message);
+    tg.sendMessage(config.tg_group_id, message, { parse_mode: 'markdown' });
 });
 
 
-client.addListener('action', function (from, to, text) {
+irc_c.addListener('action', function (from, to, text) {
     console.log(printf('From IRC Action %1  --  %2', from, text));
 
     // Blocking Enforcer
@@ -104,13 +111,10 @@ client.addListener('action', function (from, to, text) {
 
     if(to == config.irc_channel){
         if(config.other_bridge_bots.indexOf(from) == -1)
-            text = printf('** [%1] %2 **', from, text);
+            text = printf('** `%1` %2 **', from, text);
         else
             text = printf('** %1 **', text);
-        tg.sendMessage({
-            text: text,
-            chat_id: config.tg_group_id
-        });
+        tg.sendMessage(config.tg_group_id, text, { parse_mode: 'markdown' });
     }
 });
 
@@ -128,115 +132,86 @@ tg.on('message', function(msg) {
                 largest = p;
             }
         }
-        tg.getFile({file_id: largest.file_id}).then(function (ret){
-            if(ret.ok){
-                var url = printf('https://api.telegram.org/file/bot%1/%2',
-                    config.tg_bot_api_key, ret.result.file_path);
-                pvimcn.imgvim(url, function(err,ret){
-                    console.log(ret);
-                    var user = format_name(msg.from.first_name, msg.from.last_name);
-                    client.say(config.irc_channel, printf('[%1] Img: %2', user,ret));
-                });
-            }
+        tg.getFileLink(largest.file_id).then(function (filelink){
+            var url = filelink;
+            pvimcn.imgvim(url, function(err,ret){
+                console.log(ret);
+                var user = format_name(msg.from.first_name, msg.from.last_name);
+                irc_c.say(config.irc_channel, printf('[%1] Img: %2', user,ret));
+            });
         });
     } else if (msg.text && msg.text.slice(0, 1) == '/') {
         var command = msg.text.split(' ');
         if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
-            tg.sendMessage({
-                text: '阿卡林黑洞已关闭！',
-                chat_id: msg.chat.id
-            });
+            irc_c.part(config.irc_channel);
             enabled = false;
+            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER STOP-FORWARD`", { parse_mode: 'markdown' });
             return;
         } else if (command[0] == '/unhold' || command[0] == '/unhold@' + tgusername) {
-            tg.sendMessage({
-                text: '阿卡林黑洞已开启！',
-                chat_id: msg.chat.id
-            });
             enabled = true;
+            irc_c.join(config.irc_channel);
+            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER START-FORWARD`", { parse_mode: 'markdown' });
             return;
         } else if (command[0] == '/blocki2t' || command[0] == '/blocki2t@' + tgusername) {
             if (command[1] && blocki2t.indexOf(command[1]) == -1) {
                 blocki2t.push(command[1]);
-                tg.sendMessage({
-                    text: 'Temporary Blocked ' + command[1] + ' From IRC to Telegram!',
-                    chat_id: msg.chat.id
-                });
+                tg.sendMessage(msg.chat.id, '`Temporary Blocked ' + command[1] + ' From IRC to Telegram!`', { parse_mode: 'markdown' });
             } else {
-                tg.sendMessage({
-                    text: 'Nickname Unspecified!',
-                    chat_id: msg.chat.id
-                });
+                tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'markdown' });
             }
             return;
         } else if (command[0] == '/blockt2i' || command[0] == '/blockt2i@' + tgusername) {
             if (msg.reply_to_message && blockt2i.indexOf(msg.reply_to_message.from.id) == -1) {
                 blockt2i.push(msg.reply_to_message.from.id);
-                tg.sendMessage({
-                    text: 'Temporary Blocked ' + msg.reply_to_message.from.username + ' From Telegram to IRC!',
-                    chat_id: msg.chat.id
-                });
+                tg.sendMessage(msg.chat.id, '`Temporary Blocked ' + msg.reply_to_message.from.username + ' From Telegram to IRC!`', { parse_mode: 'markdown' });
             } else if (command[1] && !isNaN(command[1]) && blockt2i.indexOf(command[1]) == -1) {
                 blockt2i.push(parseInt(command[1]));
-                tg.sendMessage({
-                    text: 'Temporary Blocked ' + command[1] + ' From Telegram to IRC!',
-                    chat_id: msg.chat.id
-                });
+                tg.sendMessage(msg.chat.id, '`Temporary Blocked ' + command[1] + ' From Telegram to IRC!`', { parse_mode: 'markdown' });
             } else {
-                tg.sendMessage({
-                    text: 'Target Unspecified!',
-                    chat_id: msg.chat.id
-                });
+                tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'markdown' });
             }
             return;
         } else if (command[0] == '/unblocki2t' || command[0] == '/unblocki2t@' + tgusername) {
             if (command[1] && blocki2t.indexOf(command[1]) > -1) {
                 blocki2t.splice(blocki2t.indexOf(command[1]), 1);
-                tg.sendMessage({
-                    text: 'Temporary Unblocked ' + command[1] + ' From IRC to Telegram!',
-                    chat_id: msg.chat.id
-                });
+                tg.sendMessage(msg.chat.id, '`Temporary Unblocked ' + command[1] + ' From IRC to Telegram!`', { parse_mode: 'markdown' });
             } else {
-                tg.sendMessage({
-                    text: 'Nickname Unspecified!',
-                    chat_id: msg.chat.id
-                });
+                tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'markdown' });
             }
             return;
         } else if (command[0] == '/unblockt2i' || command[0] == '/unblockt2i@' + tgusername) {
             if (msg.reply_to_message && blockt2i.indexOf(msg.reply_to_message.from.id) > -1) {
                 blockt2i.splice(blockt2i.indexOf(msg.reply_to_message.from.id), 1);
-                tg.sendMessage({
-                    text: 'Temporary Unblocked ' + msg.reply_to_message.from.username + ' From Telegram to IRC!',
-                    chat_id: msg.chat.id
-                });
+                tg.sendMessage(msg.chat.id, '`Temporary Unblocked ' + msg.reply_to_message.from.username + ' From Telegram to IRC!`', { parse_mode: 'markdown' });
             } else if (command[1] && !isNaN(command[1]) && blockt2i.indexOf(parseInt(command[1])) > -1) {
                 blockt2i.splice(blockt2i.indexOf(parseInt(command[1])), 1);
-                tg.sendMessage({
-                    text: 'Temporary Unblocked ' + command[1] + ' From Telegram to IRC!',
-                    chat_id: msg.chat.id
-                });
+                tg.sendMessage(msg.chat.id, 'Temporary Unblocked ' + command[1] + ' From Telegram to IRC!', { parse_mode: 'markdown' });
             } else {
-                tg.sendMessage({
-                    text: 'Target Unspecified!',
-                    chat_id: msg.chat.id
-                });
+                tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'markdown' });
             }
             return;
         } else if (command[0] == '/reloadblocklist' || command[0] == '/reloadblocklist@' + tgusername) {
             // Load blocklist
             blocki2t = config.blocki2t;
             blockt2i = config.blockt2i;
-            tg.sendMessage({
-                text: 'Blocklist Reloaded!',
-                chat_id: msg.chat.id
-            });
+            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER BLOCKLIST-RELOAD`", { parse_mode: 'markdown' });
             return;
         } else if (command[0] == '/ircsay' || command[0] == '/ircsay@' + tgusername) {
             var txtn;
             command.shift();
             txtn = command.join(" ");
-            client.say(config.irc_channel, txtn);
+            irc_c.say(config.irc_channel, txtn);
+            return;
+        } else if (command[0] == '/ircrejoin' || command[0] == '/ircrejoin@' + tgusername) {
+            irc_c.part(config.irc_channel);
+            irc_c.join(config.irc_channel);
+            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER REJOIN`", {parse_mode: 'markdown'});
+            return;
+        } else if (command[0] == '/version' || command[0] == '/version@' + tgusername) {
+            tg.sendMessage(msg.chat.id, version, { parse_mode: 'markdown' });
+            return;
+        } else if (command[0] == '/syn' || command[0] == '/syn@' + tgusername) {
+            tg.sendMessage(msg.chat.id, "`ACK`", { parse_mode: 'markdown' });
             return;
         }
         return;
@@ -245,7 +220,7 @@ tg.on('message', function(msg) {
     var user, reply_to, forward_from, message_text;
 
     // Message Filter
-    if(!msg.text || msg.chat.id != config.tg_group_id || !enabled)
+    if(!msg.text || msg.chat.id != config.tg_group_id || !enabled || msg.date < inittime)
         return;
 
     // Blocking Enforcer
@@ -284,11 +259,11 @@ tg.on('message', function(msg) {
 		console.log(printf('User [%1] send a long message', user));
 		pvimcn.pvim(msg.text, function cb(err, result){
                     if(err)
-			client.say(config.irc_channel,
+			irc_c.say(config.irc_channel,
 				   printf('[%1] %2', user,
 					  msg.text.replace(/\n/g, '\\n')));
                     else
-			client.say(config.irc_channel,
+			irc_c.say(config.irc_channel,
 				   printf('Long Msg [%1] %2', user, result));
 		});
 		return;
@@ -306,12 +281,12 @@ tg.on('message', function(msg) {
 	message_text = format_newline(formatted_msg_text, user);
 	message_text = printf('[%1] %2', user, message_text);
     }
-    client.say(config.irc_channel, msgfilter(message_text));
+    irc_c.say(config.irc_channel, msgfilter(message_text));
     //End of the sub process.
 });
 
 
-client.addListener('error', function(message) {
+irc_c.addListener('error', function(message) {
     console.log('error: ', message);
 });
 
@@ -324,12 +299,12 @@ if (typeof (config.tg_msg_filter) === 'function') {
     msgfilter = config.tg_msg_filter;
 }
 
-tg.start();
 tg.getMe().then(function(ret){
     tgid = ret.result.id;
     tgusername = ret.result.username;
+    console.log('PROJECT AKARIN INITATED');
 })
-client.join(config.irc_channel);
+irc_c.join(config.irc_channel);
 
 
-console.log('卫星成功发射');
+
