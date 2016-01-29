@@ -300,8 +300,8 @@ if (typeof (config.tg_msg_filter) === 'function') {
 }
 
 tg.getMe().then(function(ret){
-    tgid = ret.result.id;
-    tgusername = ret.result.username;
+    tgid = ret.id;
+    tgusername = ret.username;
     console.log('PROJECT AKARIN INITATED');
 })
 irc_c.join(config.irc_channel);
