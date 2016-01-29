@@ -29,7 +29,6 @@ var irc_c = new IRC.Client(config.irc_server, config.irc_nick, {
 });
 var tgid, tgusername;
 var enabled = true;
-<<<<<<< ef264a51079e974c8ff73ca76d9e8c419cb1abef
 var blocki2t = new Array();
 var blockt2i = new Array();
 var msgfilter = function (s) { return s; };
@@ -44,20 +43,6 @@ function printf(args) {
     for(i=arguments.length-1; i>0; i--)
         string = string.replace('%'+i, arguments[i]);
     return string;
-=======
-var blocki2t = config.blocki2t;
-var blockt2i = config.blockt2i;
-
-
-function printf(){
-    var str = arguments[0];
-    var args = arguments;
-    str = str.replace(/%(\d+)|%{(\d+)}/g, function(match, number1, number2){
-	var number = number1? number1: number2;
-	return (typeof args[number] != 'undefined')? args[number]: match;
-    });
-    return str;
->>>>>>> add reset command
 }
 
 
@@ -112,8 +97,8 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
 
     // say last context to irc
     if (message.match(/\s*\\last\s*/)){
-	var last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
-	irc_c.say(config.irc_channel, last_msg);
+        var last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
+        irc_c.say(config.irc_channel, last_msg);
         console.log(last_msg);
         return;
     }
@@ -154,9 +139,9 @@ function sendimg(fileid, msg, type){
                 console.log(ret);
                 var user = format_name(msg.from.first_name, msg.from.last_name);
                 if (msg.caption){
-                    client.say(config.irc_channel, printf("[%1] %2: %3 Saying: %4", user, type, ret.trim(), msg.caption));
+                    irc_c.say(config.irc_channel, printf("[%1] %2: %3 Saying: %4", user, type, ret.trim(), msg.caption));
                 }else{
-                    client.say(config.irc_channel, printf("[%1] %2: %3", user, type, ret.trim()));
+                    irc_c.say(config.irc_channel, printf("[%1] %2: %3", user, type, ret.trim()));
                 }
             });
         }
@@ -179,15 +164,8 @@ tg.on('message', function(msg) {
     } else if (msg.sticker){
         sendimg(msg.sticker.file_id, msg, 'Sticker');
     } else if (msg.document){
-        sendimg(msg.document.file_id, msg, printf('File(%1)', msg.document.mime_type));
-    } else if (msg.text.slice(0, 1) == '/') {
-        var command = msg.text.split(" ");
-        if (command[0] == "/hold" || command[0] == "/hold@" + tgusername) {
-            tg.sendMessage({
-                text: '阿卡林黑洞已关闭！',
-                chat_id: msg.chat.id
-            });
-        };
+        sendimg(msg.document.file_id, msg,
+                printf('File(%1)', msg.document.mime_type));
     } else if (msg.text && msg.text.slice(0, 1) == '/') {
         var command = msg.text.split(' ');
         if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
@@ -262,10 +240,10 @@ tg.on('message', function(msg) {
             tg.sendMessage(msg.chat.id, "`ACK`", { parse_mode: 'Markdown' });
         } else if (command[0] == '/blocklist' || command[0] == '/blocklist@' + tgusername) {
             // Show blocklist
-            tg.sendMessage({
-                text: 'Blocki2t: '+blocki2t+'\nBlockt2i: '+blockt2i,
-                chat_id: msg.chat.id
-            });
+            tg.sendMessage(
+                msg.chat.id,
+                'Blocki2t: '+blocki2t+'\nBlockt2i: '+blockt2i
+            );
 
             return;
         } else if (command[0] == '/nick' || command[0] == '/nick@' + tgusername) {
@@ -280,12 +258,12 @@ tg.on('message', function(msg) {
                 nickmap.setNick(full_name, nick);
 
                 var notifymsg = printf("User \"%1\" changed nick to \"%2\"", full_name, nick);
-                tg.sendMessage({
-                    text: notifymsg,
-                    chat_id: msg.chat.id
-                });
+                tg.sendMessage(
+                    msg.chat.id,
+                    notifymsg
+                );
 
-                client.say(config.irc_channel, notifymsg);
+                irc_c.say(config.irc_channel, notifymsg);
             }else{
                 var first_name = msg.from.first_name;
                 var last_name = msg.from.last_name;
@@ -296,10 +274,10 @@ tg.on('message', function(msg) {
 
                 var notifymsg = printf("User \"%1\" has nick \"%2\"", full_name, nick);
 
-                tg.sendMessage({
-                    text: notifymsg,
-                    chat_id: msg.chat.id
-                });
+                tg.sendMessage(
+                    msg.chat.id,
+                    notifymsg
+                );
             }
 
             return;
@@ -379,16 +357,16 @@ tg.on('message', function(msg) {
 	message_text = printf('[%1] %2', user, message_text);
     }
     if(me_message){
-        client.action(config.irc_channel, message_text);
+        irc_c.action(config.irc_channel, message_text);
     }else{
-        client.say(config.irc_channel, message_text);
+        irc_c.say(config.irc_channel, message_text);
     }
     //End of the sub process.
 });
 
 var nicks = null;
 
-client.addListener('names', function(channel, newnicks){
+irc_c.addListener('names', function(channel, newnicks){
     nicks = newnicks;
 });
 
@@ -426,9 +404,11 @@ irc_c.addListener('error', function(message) {
     console.log('error: ', message);
 });
 
-client.join(config.irc_channel);
+irc_c.join(config.irc_channel);
 
 function resetTg(){
+    tg.sendMessage(config.tg_group_id, "`REQUESTED RESET BY USER`", { parse_mode: 'Markdown' });
+    irc_c.part(config.irc_channel);
     process.exit(2);
 }
 
@@ -449,6 +429,6 @@ tg.getMe().then(function(ret){
     tgid = ret.id;
     tgusername = ret.username;
     console.log('PROJECT AKARIN INITATED');
-})
+});
 irc_c.join(config.irc_channel);
 
