@@ -29,6 +29,7 @@ var irc_c = new IRC.Client(config.irc_server, config.irc_nick, {
 });
 var tgid, tgusername;
 var enabled = true;
+<<<<<<< ef264a51079e974c8ff73ca76d9e8c419cb1abef
 var blocki2t = new Array();
 var blockt2i = new Array();
 var msgfilter = function (s) { return s; };
@@ -43,6 +44,20 @@ function printf(args) {
     for(i=arguments.length-1; i>0; i--)
         string = string.replace('%'+i, arguments[i]);
     return string;
+=======
+var blocki2t = config.blocki2t;
+var blockt2i = config.blockt2i;
+
+
+function printf(){
+    var str = arguments[0];
+    var args = arguments;
+    str = str.replace(/%(\d+)|%{(\d+)}/g, function(match, number1, number2){
+	var number = number1? number1: number2;
+	return (typeof args[number] != 'undefined')? args[number]: match;
+    });
+    return str;
+>>>>>>> add reset command
 }
 
 
@@ -51,8 +66,8 @@ function format_name(first_name, last_name) {
         first_name + ' ' + last_name:
         first_name;
     full_name = nickmap.getNick(full_name);
-    if(full_name.length > 24)
-        full_name = full_name.slice(0, 24);
+    // if(full_name.length > 24)
+        // full_name = full_name.slice(0, 24);
     return full_name;
 }
 
@@ -90,8 +105,10 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
     console.log(printf('From IRC %1  --  %2', from, message));
 
     // Blocking Enforcer
-    if (blocki2t.indexOf(from) > -1 || !enabled)
+    if (blocki2t.indexOf(from) > -1 || !enabled){
+        console.log("blocked");
         return;
+    }
 
     // say last context to irc
     if (message.match(/\s*\\last\s*/)){
@@ -99,6 +116,10 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
 	irc_c.say(config.irc_channel, last_msg);
         console.log(last_msg);
         return;
+    }
+
+    if (message.match(/\s*\\reset\w*/)){
+        resetTg();
     }
 
     if(config.other_bridge_bots.indexOf(from) == -1)
@@ -239,10 +260,18 @@ tg.on('message', function(msg) {
             return;
         } else if (command[0] == '/syn' || command[0] == '/syn@' + tgusername) {
             tg.sendMessage(msg.chat.id, "`ACK`", { parse_mode: 'Markdown' });
+        } else if (command[0] == '/blocklist' || command[0] == '/blocklist@' + tgusername) {
+            // Show blocklist
+            tg.sendMessage({
+                text: 'Blocki2t: '+blocki2t+'\nBlockt2i: '+blockt2i,
+                chat_id: msg.chat.id
+            });
+
+            return;
         } else if (command[0] == '/nick' || command[0] == '/nick@' + tgusername) {
             // Load blocklist
             if(command[1]){
-                var nick=command.slice(1).join(" ");
+                var nick=command.slice(1).join(" ").trim();
                 var first_name = msg.from.first_name;
                 var last_name = msg.from.last_name;
                 var full_name = last_name?
@@ -278,6 +307,8 @@ tg.on('message', function(msg) {
             me_message = true;
             msg.text = msg.text.substring(command[0].length);
             // passthrough to allow /me action
+        } else if (command[0] == '/reset' || command[0] == '/reset@' + tgusername) {
+            resetTg();
         } else {
             return;
         }
@@ -395,8 +426,16 @@ irc_c.addListener('error', function(message) {
     console.log('error: ', message);
 });
 
+client.join(config.irc_channel);
+
+function resetTg(){
+    process.exit(2);
+}
 
 
+tg.on('error', function(){
+    resetTg();
+});
 // Load blocklist
 blocki2t = config.blocki2t;
 blockt2i = config.blockt2i;
@@ -412,6 +451,4 @@ tg.getMe().then(function(ret){
     console.log('PROJECT AKARIN INITATED');
 })
 irc_c.join(config.irc_channel);
-
-
 
