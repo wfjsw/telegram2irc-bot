@@ -160,6 +160,8 @@ tg.on('message', function(msg) {
         sendimg(largest.file_id, msg, 'Img');
     } else if (config.irc_photo_forwarding_enabled && msg.sticker){
         sendimg(msg.sticker.file_id, msg, 'Sticker');
+    } else if (config.irc_photo_forwarding_enabled && msg.voice){
+        sendimg(msg.voice.file_id, msg, 'Voice');
     } else if (config.irc_photo_forwarding_enabled && msg.document){
         sendimg(msg.document.file_id, msg,
             printf('File(%1)', msg.document.mime_type));
