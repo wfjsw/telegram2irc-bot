@@ -237,6 +237,7 @@ tg.on('message', function(msg) {
             return;
         } else if (command[0] == '/syn' || command[0] == '/syn@' + tgusername) {
             tg.sendMessage(msg.chat.id, "`ACK`", { parse_mode: 'Markdown' });
+            return;
         } else if (command[0] == '/blocklist' || command[0] == '/blocklist@' + tgusername) {
             // Show blocklist
             tg.sendMessage(
