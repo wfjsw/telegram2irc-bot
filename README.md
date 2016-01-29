@@ -24,4 +24,5 @@ Commands are **cASe SeNsITivE** !
 /blocki2t nickname - BLOCK IRC -> TELEGRAM
 /blockt2i [ID] - BLOCK TELEGRAM -> IRC BY REPLY || ID
 /me action - SEND ACTION MSG TO IRC
+/version - GET CURRENT WRITEDATE
 ```
