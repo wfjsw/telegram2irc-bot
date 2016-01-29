@@ -108,8 +108,8 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
     }
 
     if(config.other_bridge_bots.indexOf(from) == -1)
-        message = printf('`[%1]` %2', from, message);
-    tg.sendMessage(config.tg_group_id, message, { parse_mode: 'Markdown' });
+        message = printf('[%1] %2', from, message);
+    tg.sendMessage(config.tg_group_id, message);
 });
 
 
@@ -122,29 +122,26 @@ irc_c.addListener('action', function (from, to, text) {
 
     if(to == config.irc_channel){
         if(config.other_bridge_bots.indexOf(from) == -1)
-            text = printf('** `%1` %2 **', from, text);
+            text = printf('** %1 %2 **', from, text);
         else
             text = printf('** %1 **', text);
-        tg.sendMessage(config.tg_group_id, text, { parse_mode: 'Markdown' });
+        tg.sendMessage(config.tg_group_id, text);
     }
 });
 
 function sendimg(fileid, msg, type){
-    tg.sendChatAction({chat_id: msg.chat.id, action: 'upload_photo'});
-    tg.getFile({file_id: fileid}).then(function (ret){
-        if(ret.ok){
-            var url = printf("https://api.telegram.org/file/bot%1/%2",
-                config.tg_bot_api_key, ret.result.file_path);
-            pvimcn.imgvim(url, function(err,ret){
-                console.log(ret);
-                var user = format_name(msg.from.first_name, msg.from.last_name);
-                if (msg.caption){
-                    irc_c.say(config.irc_channel, printf("[%1] %2: %3 Saying: %4", user, type, ret.trim(), msg.caption));
-                }else{
-                    irc_c.say(config.irc_channel, printf("[%1] %2: %3", user, type, ret.trim()));
-                }
-            });
-        }
+    tg.sendChatAction(msg.chat.id, 'upload_photo');
+    tg.getFileLink(fileid).then(function (ret){
+        var url = ret;
+        pvimcn.imgvim(url, function(err,ret){
+            console.log(ret);
+            var user = format_name(msg.from.first_name, msg.from.last_name);
+            if (msg.caption){
+                irc_c.say(config.irc_channel, printf("[%1] %2: %3 Saying: %4", user, type, ret.trim(), msg.caption));
+            }else{
+                irc_c.say(config.irc_channel, printf("[%1] %2: %3", user, type, ret.trim()));
+            }
+        });
     });
 }
 
@@ -161,11 +158,11 @@ tg.on('message', function(msg) {
             }
         }
         sendimg(largest.file_id, msg, 'Img');
-    } else if (msg.sticker){
+    } else if (config.irc_photo_forwarding_enabled && msg.sticker){
         sendimg(msg.sticker.file_id, msg, 'Sticker');
-    } else if (msg.document){
+    } else if (config.irc_photo_forwarding_enabled && msg.document){
         sendimg(msg.document.file_id, msg,
-                printf('File(%1)', msg.document.mime_type));
+            printf('File(%1)', msg.document.mime_type));
     } else if (msg.text && msg.text.slice(0, 1) == '/') {
         var command = msg.text.split(' ');
         if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
@@ -391,13 +388,15 @@ tg.on("inline_query", function(msg){
             message_text: key + ": "+ msg.query
         });
     }
-    tg.answerInlineQuery({
-       inline_query_id: ""+msg.id,
-       cache_time: 10,
-       is_personal: false,
-       next_offset: next_offset,
-       results: results
-    });
+    tg.answerInlineQuery(
+        ""+msg.id,
+        results,
+        {
+           cache_time: 10,
+           is_personal: false,
+           next_offset: next_offset
+        }
+    );
 });
 
 irc_c.addListener('error', function(message) {
