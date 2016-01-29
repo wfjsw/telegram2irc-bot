@@ -1,4 +1,4 @@
-# orz-telegram-bot
+# telegram2irc-bot
 
 A Telegram-IRC sync bot.
 
@@ -25,4 +25,12 @@ Commands are **cASe SeNsITivE** !
 /blockt2i [ID] - BLOCK TELEGRAM -> IRC BY REPLY || ID
 /me action - SEND ACTION MSG TO IRC
 /version - GET CURRENT WRITEDATE
+```
+
+## Pro Tip
+
+To reduce memory usage, start the bot with
+
+```
+node --max-new-space-size=16384 --max-old-space-size=256 main
 ```
