@@ -182,6 +182,10 @@ tg.on('message', function(msg) {
     // Process Commands.
     var me_message = false;
     console.log(printf('From ID %1  --  %2', msg.chat.id, msg.text));
+
+    // enforce group chat
+    if (msg.chat.id != config.tg_group_id) return;
+
     if(config.irc_photo_forwarding_enabled && msg.photo){
         var largest = {file_size: 0};
         for(var i in msg.photo){
@@ -337,8 +341,13 @@ tg.on('message', function(msg) {
     user = format_name(msg.from.first_name, msg.from.last_name);
     if(msg.reply_to_message){
         if (msg.reply_to_message.from.id == tgid){
-            reply_to = msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
-            text = msg.reply_to_message.text.substr(reply_to.length+3);
+            if(msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)){
+                reply_to = msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
+                text = msg.reply_to_message.text.substr(reply_to.length+3);
+            }else{
+                reply_to = "[Nobody]";
+                text = msg.reply_to_message.text;
+            }
         }else{
             reply_to = format_name(msg.reply_to_message.from.first_name, msg.reply_to_message.from.last_name);
             text = msg.reply_to_message.text;
@@ -417,7 +426,7 @@ irc_c.join(config.irc_channel);
 function resetTg(){
     tg.sendMessage(config.tg_group_id, "`REQUESTED RESET BY USER`", { parse_mode: 'Markdown' });
     irc_c.part(config.irc_channel);
-    process.exit(2);
+    process.exit();
 }
 
 
