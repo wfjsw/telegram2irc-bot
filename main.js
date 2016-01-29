@@ -68,13 +68,13 @@ function format_newline(text, user, target, type) {
 // Event to write config on exit.
 process.on('SIGINT', function (code) {
     console.log('About to exit with code:', code);
-    tg.sendMessage(config.tg_group_id, "`COMMITING INTERRUPT`", { parse_mode: 'markdown' });
+    tg.sendMessage(config.tg_group_id, "`COMMITING INTERRUPT`", { parse_mode: 'Markdown' });
     irc_c.part(config.irc_channel);
     process.exit();
 });
 process.on('SIGTERM', function (code) {
     console.log('About to exit with code:', code);
-    tg.sendMessage(config.tg_group_id, "`COMMITING TERMINATE`", { parse_mode: 'markdown' });
+    tg.sendMessage(config.tg_group_id, "`COMMITING TERMINATE`", { parse_mode: 'Markdown' });
     irc_c.part(config.irc_channel);
     process.exit();
 });
@@ -98,7 +98,7 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
 
     if(config.other_bridge_bots.indexOf(from) == -1)
         message = printf('`[%1]` %2', from, message);
-    tg.sendMessage(config.tg_group_id, message, { parse_mode: 'markdown' });
+    tg.sendMessage(config.tg_group_id, message, { parse_mode: 'Markdown' });
 });
 
 
@@ -114,7 +114,7 @@ irc_c.addListener('action', function (from, to, text) {
             text = printf('** `%1` %2 **', from, text);
         else
             text = printf('** %1 **', text);
-        tg.sendMessage(config.tg_group_id, text, { parse_mode: 'markdown' });
+        tg.sendMessage(config.tg_group_id, text, { parse_mode: 'Markdown' });
     }
 });
 
@@ -145,56 +145,56 @@ tg.on('message', function(msg) {
         if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
             irc_c.part(config.irc_channel);
             enabled = false;
-            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER STOP-FORWARD`", { parse_mode: 'markdown' });
+            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER STOP-FORWARD`", { parse_mode: 'Markdown' });
             return;
         } else if (command[0] == '/unhold' || command[0] == '/unhold@' + tgusername) {
             enabled = true;
             irc_c.join(config.irc_channel);
-            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER START-FORWARD`", { parse_mode: 'markdown' });
+            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER START-FORWARD`", { parse_mode: 'Markdown' });
             return;
         } else if (command[0] == '/blocki2t' || command[0] == '/blocki2t@' + tgusername) {
             if (command[1] && blocki2t.indexOf(command[1]) == -1) {
                 blocki2t.push(command[1]);
-                tg.sendMessage(msg.chat.id, '`Temporary Blocked ' + command[1] + ' From IRC to Telegram!`', { parse_mode: 'markdown' });
+                tg.sendMessage(msg.chat.id, '`Temporary Blocked ' + command[1] + ' From IRC to Telegram!`', { parse_mode: 'Markdown' });
             } else {
-                tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'markdown' });
+                tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'Markdown' });
             }
             return;
         } else if (command[0] == '/blockt2i' || command[0] == '/blockt2i@' + tgusername) {
             if (msg.reply_to_message && blockt2i.indexOf(msg.reply_to_message.from.id) == -1) {
                 blockt2i.push(msg.reply_to_message.from.id);
-                tg.sendMessage(msg.chat.id, '`Temporary Blocked ' + msg.reply_to_message.from.username + ' From Telegram to IRC!`', { parse_mode: 'markdown' });
+                tg.sendMessage(msg.chat.id, '`Temporary Blocked ' + msg.reply_to_message.from.username + ' From Telegram to IRC!`', { parse_mode: 'Markdown' });
             } else if (command[1] && !isNaN(command[1]) && blockt2i.indexOf(command[1]) == -1) {
                 blockt2i.push(parseInt(command[1]));
-                tg.sendMessage(msg.chat.id, '`Temporary Blocked ' + command[1] + ' From Telegram to IRC!`', { parse_mode: 'markdown' });
+                tg.sendMessage(msg.chat.id, '`Temporary Blocked ' + command[1] + ' From Telegram to IRC!`', { parse_mode: 'Markdown' });
             } else {
-                tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'markdown' });
+                tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'Markdown' });
             }
             return;
         } else if (command[0] == '/unblocki2t' || command[0] == '/unblocki2t@' + tgusername) {
             if (command[1] && blocki2t.indexOf(command[1]) > -1) {
                 blocki2t.splice(blocki2t.indexOf(command[1]), 1);
-                tg.sendMessage(msg.chat.id, '`Temporary Unblocked ' + command[1] + ' From IRC to Telegram!`', { parse_mode: 'markdown' });
+                tg.sendMessage(msg.chat.id, '`Temporary Unblocked ' + command[1] + ' From IRC to Telegram!`', { parse_mode: 'Markdown' });
             } else {
-                tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'markdown' });
+                tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'Markdown' });
             }
             return;
         } else if (command[0] == '/unblockt2i' || command[0] == '/unblockt2i@' + tgusername) {
             if (msg.reply_to_message && blockt2i.indexOf(msg.reply_to_message.from.id) > -1) {
                 blockt2i.splice(blockt2i.indexOf(msg.reply_to_message.from.id), 1);
-                tg.sendMessage(msg.chat.id, '`Temporary Unblocked ' + msg.reply_to_message.from.username + ' From Telegram to IRC!`', { parse_mode: 'markdown' });
+                tg.sendMessage(msg.chat.id, '`Temporary Unblocked ' + msg.reply_to_message.from.username + ' From Telegram to IRC!`', { parse_mode: 'Markdown' });
             } else if (command[1] && !isNaN(command[1]) && blockt2i.indexOf(parseInt(command[1])) > -1) {
                 blockt2i.splice(blockt2i.indexOf(parseInt(command[1])), 1);
-                tg.sendMessage(msg.chat.id, 'Temporary Unblocked ' + command[1] + ' From Telegram to IRC!', { parse_mode: 'markdown' });
+                tg.sendMessage(msg.chat.id, 'Temporary Unblocked ' + command[1] + ' From Telegram to IRC!', { parse_mode: 'Markdown' });
             } else {
-                tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'markdown' });
+                tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'Markdown' });
             }
             return;
         } else if (command[0] == '/reloadblocklist' || command[0] == '/reloadblocklist@' + tgusername) {
             // Load blocklist
             blocki2t = config.blocki2t;
             blockt2i = config.blockt2i;
-            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER BLOCKLIST-RELOAD`", { parse_mode: 'markdown' });
+            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER BLOCKLIST-RELOAD`", { parse_mode: 'Markdown' });
             return;
         } else if (command[0] == '/ircsay' || command[0] == '/ircsay@' + tgusername) {
             var txtn;
@@ -205,13 +205,13 @@ tg.on('message', function(msg) {
         } else if (command[0] == '/ircrejoin' || command[0] == '/ircrejoin@' + tgusername) {
             irc_c.part(config.irc_channel);
             irc_c.join(config.irc_channel);
-            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER REJOIN`", {parse_mode: 'markdown'});
+            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER REJOIN`", {parse_mode: 'Markdown'});
             return;
         } else if (command[0] == '/version' || command[0] == '/version@' + tgusername) {
-            tg.sendMessage(msg.chat.id, version, { parse_mode: 'markdown' });
+            tg.sendMessage(msg.chat.id, version, { parse_mode: 'Markdown' });
             return;
         } else if (command[0] == '/syn' || command[0] == '/syn@' + tgusername) {
-            tg.sendMessage(msg.chat.id, "`ACK`", { parse_mode: 'markdown' });
+            tg.sendMessage(msg.chat.id, "`ACK`", { parse_mode: 'Markdown' });
             return;
         }
         return;
