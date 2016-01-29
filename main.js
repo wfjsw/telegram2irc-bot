@@ -95,13 +95,7 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
         return;
     }
 
-    // say last context to irc
-    if (message.match(/\s*\\last\s*/)){
-        var last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
-        irc_c.say(config.irc_channel, last_msg);
-        console.log(last_msg);
-        return;
-    }
+
 
     if (message.match(/\s*\\reset\w*/)){
         resetTg();
@@ -109,6 +103,13 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
 
     if(config.other_bridge_bots.indexOf(from) == -1)
         message = printf('[%1] %2', from, message);
+    // say last context to irc
+    if (message.match(/\s*\\last\s*/)){
+        var last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
+        irc_c.say(config.irc_channel, last_msg);
+        console.log(last_msg);
+        message += "\n"+last_msg;
+    }
     tg.sendMessage(config.tg_group_id, message);
 });
 
