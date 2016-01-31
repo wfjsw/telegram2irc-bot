@@ -3,7 +3,7 @@
 // Total hours wasted here -> 12
 // ^ Do Not Remove This!
 
-var version = "`PROJECT AKARIN VERSION 20160129`";
+var version = "`PROJECT AKARIN VERSION 20160131`";
 
 'use strict';
 
@@ -97,8 +97,8 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
     }
 
     if(config.other_bridge_bots.indexOf(from) == -1)
-        message = printf('`[%1]` %2', from, message);
-    tg.sendMessage(config.tg_group_id, message, { parse_mode: 'Markdown' });
+        message = printf('[%1] %2', from, message);
+    tg.sendMessage(config.tg_group_id, message);
 });
 
 
@@ -111,10 +111,10 @@ irc_c.addListener('action', function (from, to, text) {
 
     if(to == config.irc_channel){
         if(config.other_bridge_bots.indexOf(from) == -1)
-            text = printf('** `%1` %2 **', from, text);
+            text = printf('** %1 %2 **', from, text);
         else
             text = printf('** %1 **', text);
-        tg.sendMessage(config.tg_group_id, text, { parse_mode: 'Markdown' });
+        tg.sendMessage(config.tg_group_id, text);
     }
 });
 
