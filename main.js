@@ -142,12 +142,10 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
         console.log(last_msg);
         message += "\n"+last_msg;
     }
-<<<<<<< HEAD
 
     if(config.other_bridge_bots.indexOf(from) == -1)
         message = printf('[%1] %2', from, message);
-=======
->>>>>>> a58bf32640054d66cee219f491bc737bc98da74e
+
     tg.sendMessage(config.tg_group_id, message);
 });
 
