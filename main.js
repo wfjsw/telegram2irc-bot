@@ -11,11 +11,12 @@ var version = "`PROJECT AKARIN VERSION 20160131`";
 var Telegram = require('node-telegram-bot-api');
 var IRC = require('irc');
 var config = require('./config.js');
-var pvimcn = require('./pvimcn.js');
-
+var pvimcn = require("./pvimcn.js");
+var encoding = require("encoding");
+var nickmap = require("./nickmap.js");
 
 var tg = new Telegram(config.tg_bot_api_key, { polling: true });
-var irc_c = new IRC.irc_c(config.irc_server, config.irc_nick, {
+var irc_c = new IRC.Client(config.irc_server, config.irc_nick, {
     channels: [config.irc_channel],
     sasl: config.irc_sasl,
     secure: config.irc_ssl,
@@ -49,8 +50,9 @@ function format_name(first_name, last_name) {
     var full_name = last_name?
         first_name + ' ' + last_name:
         first_name;
-    if(full_name.length > 20)
-        full_name = full_name.slice(0, 20);
+    full_name = nickmap.getNick(full_name);
+    // if(full_name.length > 24)
+        // full_name = full_name.slice(0, 24);
     return full_name;
 }
 
@@ -58,9 +60,41 @@ function format_name(first_name, last_name) {
 function format_newline(text, user, target, type) {
     text = text.replace(/(\s*\n\s*)+/g, '\n');
     if(type == 'reply')
-        return text.replace(/\n/g, printf('\n[%1] %2: ', user, target));
+        text = text.replace(/\n/g, printf('\n[%1] %2: ', user, target));
     if(type == 'forward')
-        return text.replace(/\n/g, printf('\n[%1] Fwd %2: ', user, target));
+        text = text.replace(/\n/g, printf('\n[%1] Fwd %2: ', user, target));
+
+    var arr = text.split('\n');
+    if (arr.length > config.irc_line_count_limit ||
+        arr.some(function (line){
+                return line.length > config.irc_message_length_limit;
+        })){
+
+        if(config.irc_long_message_paste_enabled){
+            console.log(printf('User [%1] send a long message', user));
+            pvimcn.pvim(text, function cb(err, result){
+                console.log("pvim result: "+ result);
+                if(err)
+                    irc_c.say(config.irc_channel,
+                               printf('[%1] %2', user,
+                                      text.replace(/\n/g, '\\n')));
+                else
+                    irc_c.say(config.irc_channel,
+                               printf('Long Msg [%1] %2', user, result));
+            });
+            return null;
+        }else{
+            arr.map(function (line){
+                return line.slice(0, config.irc_message_length_limit);
+            });
+            if(arr.length > config.irc_line_count_limit){
+                arr = arr.slice(0, config.irc_line_count_limit);
+                arr.push("(line count limit exceeded)");
+            }
+            text = arr.join('\n');
+        }
+    }
+
     return text.replace(/\n/g, printf('\n[%1] ', user));
 }
 
@@ -80,24 +114,40 @@ process.on('SIGTERM', function (code) {
 });
 // End Exit Event.
 
+// record last reply context
+var lastContext = {name:"", text:"", byname:""};
+
 
 irc_c.addListener('message' + config.irc_channel, function (from, message) {
     console.log(printf('From IRC %1  --  %2', from, message));
 
     // Blocking Enforcer
-    if (blocki2t.indexOf(from) > -1 || !enabled)
+    if (blocki2t.indexOf(from) > -1 || !enabled){
+        console.log("blocked");
         return;
+    }
 
-    // say last context to irc
-    if (message.match(/\s*\\last\s*/)){
-	var last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
-	irc_c.say(config.irc_channel, last_msg);
-        console.log(last_msg);
-        return;
+
+
+    if (message.match(/\s*\\reset\w*/)){
+        resetTg();
     }
 
     if(config.other_bridge_bots.indexOf(from) == -1)
         message = printf('[%1] %2', from, message);
+    // say last context to irc
+    if (message.match(/\s*\\last\s*/)){
+        var last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
+        irc_c.say(config.irc_channel, last_msg);
+        console.log(last_msg);
+        message += "\n"+last_msg;
+    }
+<<<<<<< HEAD
+
+    if(config.other_bridge_bots.indexOf(from) == -1)
+        message = printf('[%1] %2', from, message);
+=======
+>>>>>>> a58bf32640054d66cee219f491bc737bc98da74e
     tg.sendMessage(config.tg_group_id, message);
 });
 
@@ -118,11 +168,25 @@ irc_c.addListener('action', function (from, to, text) {
     }
 });
 
-// record last reply context
-var lastContext = {name:'', text:''};
+function sendimg(fileid, msg, type){
+    tg.sendChatAction(msg.chat.id, 'upload_photo');
+    tg.getFileLink(fileid).then(function (ret){
+        var url = ret;
+        pvimcn.imgvim(url, function(err,ret){
+            console.log(ret);
+            var user = format_name(msg.from.first_name, msg.from.last_name);
+            if (msg.caption){
+                irc_c.say(config.irc_channel, printf("[%1] %2: %3 Saying: %4", user, type, ret.trim(), msg.caption));
+            }else{
+                irc_c.say(config.irc_channel, printf("[%1] %2: %3", user, type, ret.trim()));
+            }
+        });
+    });
+}
 
 tg.on('message', function(msg) {
     // Process Commands.
+    var me_message = false;
     console.log(printf('From ID %1  --  %2', msg.chat.id, msg.text));
     if(config.irc_photo_forwarding_enabled && msg.photo){
         var largest = {file_size: 0};
@@ -132,14 +196,14 @@ tg.on('message', function(msg) {
                 largest = p;
             }
         }
-        tg.getFileLink(largest.file_id).then(function (filelink){
-            var url = filelink;
-            pvimcn.imgvim(url, function(err,ret){
-                console.log(ret);
-                var user = format_name(msg.from.first_name, msg.from.last_name);
-                irc_c.say(config.irc_channel, printf('[%1] Img: %2', user,ret));
-            });
-        });
+        sendimg(largest.file_id, msg, 'Img');
+    } else if (config.irc_photo_forwarding_enabled && msg.sticker){
+        sendimg(msg.sticker.file_id, msg, 'Sticker');
+    } else if (config.irc_photo_forwarding_enabled && msg.voice){
+        sendimg(msg.voice.file_id, msg, 'Voice');
+    } else if (config.irc_photo_forwarding_enabled && msg.document){
+        sendimg(msg.document.file_id, msg,
+            printf('File(%1)', msg.document.mime_type));
     } else if (msg.text && msg.text.slice(0, 1) == '/') {
         var command = msg.text.split(' ');
         if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
@@ -213,11 +277,60 @@ tg.on('message', function(msg) {
         } else if (command[0] == '/syn' || command[0] == '/syn@' + tgusername) {
             tg.sendMessage(msg.chat.id, "`ACK`", { parse_mode: 'Markdown' });
             return;
-        }
-        return;
-    }
+        } else if (command[0] == '/blocklist' || command[0] == '/blocklist@' + tgusername) {
+            // Show blocklist
+            tg.sendMessage(
+                msg.chat.id,
+                'Blocki2t: '+blocki2t+'\nBlockt2i: '+blockt2i
+            );
 
-    var user, reply_to, forward_from, message_text;
+            return;
+        } else if (command[0] == '/nick' || command[0] == '/nick@' + tgusername) {
+            // Load blocklist
+            if(command[1]){
+                var nick=command.slice(1).join(" ").trim();
+                var first_name = msg.from.first_name;
+                var last_name = msg.from.last_name;
+                var full_name = last_name?
+                        first_name + ' ' + last_name:
+                        first_name;
+                nickmap.setNick(full_name, nick);
+
+                var notifymsg = printf("User \"%1\" changed nick to \"%2\"", full_name, nick);
+                tg.sendMessage(
+                    msg.chat.id,
+                    notifymsg
+                );
+
+                irc_c.say(config.irc_channel, notifymsg);
+            }else{
+                var first_name = msg.from.first_name;
+                var last_name = msg.from.last_name;
+                var full_name = last_name?
+                        first_name + ' ' + last_name:
+                        first_name;
+                var nick = nickmap.getNick(full_name);
+
+                var notifymsg = printf("User \"%1\" has nick \"%2\"", full_name, nick);
+
+                tg.sendMessage(
+                    msg.chat.id,
+                    notifymsg
+                );
+            }
+
+            return;
+        } else if (command[0] == '/me' || command[0] == '/me@' + tgusername) {
+            me_message = true;
+            msg.text = msg.text.substring(command[0].length);
+            // passthrough to allow /me action
+        } else if (command[0] == '/reset' || command[0] == '/reset@' + tgusername) {
+            resetTg();
+        } else {
+            return;
+        }
+    }
+    var user, reply_to, text, forward_from, message_text;
 
     // Message Filter
     if(!msg.text || msg.chat.id != config.tg_group_id || !enabled || msg.date < inittime)
@@ -229,15 +342,17 @@ tg.on('message', function(msg) {
 
     user = format_name(msg.from.first_name, msg.from.last_name);
     if(msg.reply_to_message){
-        if (msg.reply_to_message.from.id == tgid)
+        if (msg.reply_to_message.from.id == tgid){
             reply_to = msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
-        else
+            text = msg.reply_to_message.text.substr(reply_to.length+3);
+        }else{
             reply_to = format_name(msg.reply_to_message.from.first_name, msg.reply_to_message.from.last_name);
-        lastContext = {
-	    text: msg.reply_to_message.text,
-	    name: reply_to
-	};
+            text = msg.reply_to_message.text;
+            text = text ? text : "Img";
+        }
+        lastContext = {text:text, name:reply_to, byname: user};
         message_text = format_newline(msg.text, user, reply_to, 'reply');
+        if(message_text === null) return;
         message_text = printf('[%1] %2: %3', user, reply_to, message_text);
     } else if (msg.forward_from){
         if(msg.forward_from.id == tgid)
@@ -245,51 +360,76 @@ tg.on('message', function(msg) {
         else
             forward_from = format_name(msg.forward_from.first_name, msg.forward_from.last_name);
         message_text = format_newline(msg.text, user, forward_from,
-				      'forward', true);
+                                      'forward', true);
+        if(message_text === null) return;
         message_text = printf('[%1] Fwd %2: %3', user, forward_from, message_text);
     } else {
-	var formatted_msg_text = msg.text;
-	var arr = msg.text.split('\n');
-        if (arr.length > config.irc_line_count_limit ||
-            arr.some(function (line){
-                    return line.length > config.irc_message_length_limit;
-            })){
-
-	    if(config.irc_long_message_paste_enabled){
-		console.log(printf('User [%1] send a long message', user));
-		pvimcn.pvim(msg.text, function cb(err, result){
-                    if(err)
-			irc_c.say(config.irc_channel,
-				   printf('[%1] %2', user,
-					  msg.text.replace(/\n/g, '\\n')));
-                    else
-			irc_c.say(config.irc_channel,
-				   printf('Long Msg [%1] %2', user, result));
-		});
-		return;
-	    }else{
-		arr.map(function (line){
-		    return line.slice(0, config.irc_message_length_limit);
-		});
-		if(arr.length > config.irc_line_count_limit){
-		    arr = arr.slice(0, config.irc_line_count_limit);
-		    arr.push("(line count limit exceeded)");
-		}
-		formatted_msg_text = arr.join('\n');
-	    }
-        }
-	message_text = format_newline(formatted_msg_text, user);
-	message_text = printf('[%1] %2', user, message_text);
+        message_text = format_newline(msg.text, user);
+        if(message_text === null) return;
+        message_text = printf('[%1] %2', user, message_text);
     }
-    irc_c.say(config.irc_channel, msgfilter(message_text));
+    if(me_message){
+        irc_c.action(config.irc_channel, message_text);
+    }else{
+        irc_c.say(config.irc_channel, message_text);
+    }
     //End of the sub process.
 });
 
+var nicks = null;
+
+irc_c.addListener('names', function(channel, newnicks){
+    nicks = newnicks;
+});
+
+tg.on("inline_query", function(msg){
+    console.log("inline_query: id="+msg.id+" query="+msg.query+" offset="+msg.offset);
+    var user = format_name(msg.from.first_name, msg.from.last_name);
+    var results = [];
+    var offset = msg.offset ? msg.offset : 0;
+
+    var next_offset = offset+50 ;
+    if (offset+50 < Object.keys(nicks).length)
+        next_offset = "";
+    var names = Object.keys(nicks).slice(offset, offset+50);
+
+    for(var i in names){
+        var key = names[i];
+        results.push({
+            type:"article",
+            id: msg.id+"/"+key,
+            title: ""+nicks[key]+key,
+            description: "预览: " + key + ": "+ msg.query,
+            message_text: key + ": "+ msg.query
+        });
+    }
+    tg.answerInlineQuery(
+        ""+msg.id,
+        results,
+        {
+           cache_time: 10,
+           is_personal: false,
+           next_offset: next_offset
+        }
+    );
+});
 
 irc_c.addListener('error', function(message) {
     console.log('error: ', message);
 });
 
+irc_c.join(config.irc_channel);
+
+function resetTg(){
+    tg.sendMessage(config.tg_group_id, "`REQUESTED RESET BY USER`", { parse_mode: 'Markdown' });
+    irc_c.part(config.irc_channel);
+    process.exit(2);
+}
+
+
+tg.on('error', function(){
+    resetTg();
+});
 // Load blocklist
 blocki2t = config.blocki2t;
 blockt2i = config.blockt2i;
@@ -303,8 +443,6 @@ tg.getMe().then(function(ret){
     tgid = ret.id;
     tgusername = ret.username;
     console.log('PROJECT AKARIN INITATED');
-})
+});
 irc_c.join(config.irc_channel);
-
-
 
