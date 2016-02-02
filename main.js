@@ -3,7 +3,7 @@
 // Total hours wasted here -> 12
 // ^ Do Not Remove This!
 
-var version = "`PROJECT AKARIN VERSION 20160131`";
+var version = "`PROJECT AKARIN VERSION 20160202`";
 
 'use strict';
 
@@ -271,6 +271,11 @@ tg.on('message', function(msg) {
             return;
         } else if (command[0] == '/version' || command[0] == '/version@' + tgusername) {
             tg.sendMessage(msg.chat.id, version, { parse_mode: 'Markdown' });
+            return;
+        } else if (command[0] == '/uptime' || command[0] == '/uptime@' + tgusername) {
+            var uptimestr = '`PROJECT AKARIN UPTIME: ' + process.uptime() + ' seconds`\n';
+            uptimestr += '`OS UPTIME: ' + require('os').uptime() + ' seconds`'
+            tg.sendMessage(msg.chat.id, uptimestr, { parse_mode: 'Markdown' });
             return;
         } else if (command[0] == '/syn' || command[0] == '/syn@' + tgusername) {
             tg.sendMessage(msg.chat.id, "`ACK`", { parse_mode: 'Markdown' });
