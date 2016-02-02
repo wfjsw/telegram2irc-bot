@@ -141,16 +141,22 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
         resetTg();
     }
 
+    if (message.match(/\s*\\invite/)){
+        var link="https://telegram.me/joinchat/BAhWBQDEr2aGh7c_xjt8CQ";
+        var msg = "Join the telegram group: "+link;
+        irc_c.say(config.irc_channel, msg);
+        message += "\n"+msg;
+    }
+
+    if(config.other_bridge_bots.indexOf(from) == -1)
+        message = printf('[%1] %2', from, message);
     // say last context to irc
-    if (message.match(/\s*\\last\s*/)){
+    if (message.match(/\s*\\last\w*/)){
         var last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
         irc_c.say(config.irc_channel, last_msg);
         console.log(last_msg);
         message += "\n"+last_msg;
     }
-
-    if(config.other_bridge_bots.indexOf(from) == -1)
-        message = printf('[%1] %2', from, message);
 
     tg.sendMessage(config.tg_group_id, message);
 });
@@ -342,8 +348,6 @@ tg.on('message', function(msg) {
             me_message = true;
             msg.text = msg.text.substring(command[0].length);
             // passthrough to allow /me action
-        } else if (command[0] == '/reset' || command[0] == '/reset@' + tgusername) {
-            resetTg();
         } else {
             return;
         }
@@ -450,9 +454,6 @@ function resetTg(){
 }
 
 
-tg.on('error', function(){
-    resetTg();
-});
 // Load blocklist
 blocki2t = config.blocki2t;
 blockt2i = config.blockt2i;
