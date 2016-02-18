@@ -142,7 +142,7 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
     }
 
     if (message.match(/\s*\\invite/)){
-        var link="https://telegram.me/joinchat/BAhWBQDEr2aGh7c_xjt8CQ";
+        var link= config.tg_invite_link;
         var msg = "Join the telegram group: "+link;
         irc_c.say(config.irc_channel, msg);
         message += "\n"+msg;
