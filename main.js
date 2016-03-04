@@ -3,7 +3,7 @@
 // Total hours wasted here -> 12
 // ^ Do Not Remove This!
 
-var version = "`PROJECT AKARIN VERSION 20160202`";
+var version = "`PROJECT AKARIN VERSION 20160304`";
 
 'use strict';
 
@@ -46,14 +46,15 @@ function printf(args) {
 }
 
 
-function format_name(first_name, last_name) {
+function format_name(id, first_name, last_name) {
     var full_name = last_name?
         first_name + ' ' + last_name:
         first_name;
-    full_name = nickmap.getNick(full_name);
+    var full_name_1 = nickmap.getNick(full_name);
+    full_name_1 = full_name_1 ? full_name_1 : full_name;
     // if(full_name.length > 24)
         // full_name = full_name.slice(0, 24);
-    return full_name;
+    return full_name_1;
 }
 
 
@@ -172,7 +173,7 @@ function sendimg(fileid, msg, type){
         var url = ret;
         pvimcn.imgvim(url, function(err,ret){
             console.log(ret);
-            var user = format_name(msg.from.first_name, msg.from.last_name);
+            var user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name);
             if (msg.caption){
                 irc_c.say(config.irc_channel, printf("[%1] %2: %3 Saying: %4", user, type, ret.trim(), msg.caption));
             }else{
@@ -297,7 +298,7 @@ tg.on('message', function(msg) {
                 var full_name = last_name?
                         first_name + ' ' + last_name:
                         first_name;
-                nickmap.setNick(full_name, nick);
+                nickmap.setNick(msg.from.id, nick);
 
                 var notifymsg = printf("User \"%1\" changed nick to \"%2\"", full_name, nick);
                 tg.sendMessage(
@@ -312,7 +313,8 @@ tg.on('message', function(msg) {
                 var full_name = last_name?
                         first_name + ' ' + last_name:
                         first_name;
-                var nick = nickmap.getNick(full_name);
+                var nick = nickmap.getNick(msg.from.id);
+                nick = nick ? nick : full_name;
 
                 var notifymsg = printf("User \"%1\" has nick \"%2\"", full_name, nick);
 
@@ -343,13 +345,13 @@ tg.on('message', function(msg) {
     if (blockt2i.indexOf(msg.from.id) > -1 || msg.text.slice(0, 3) == '@@@')
         return;
 
-    user = format_name(msg.from.first_name, msg.from.last_name);
+    user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name);
     if(msg.reply_to_message){
         if (msg.reply_to_message.from.id == tgid){
             reply_to = msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
             text = msg.reply_to_message.text.substr(reply_to.length+3);
         }else{
-            reply_to = format_name(msg.reply_to_message.from.first_name, msg.reply_to_message.from.last_name);
+            reply_to = format_name(msg.reply_to_message.from.id, msg.reply_to_message.from.first_name, msg.reply_to_message.from.last_name);
             text = msg.reply_to_message.text;
             text = text ? text : "Img";
         }
@@ -361,7 +363,7 @@ tg.on('message', function(msg) {
         if(msg.forward_from.id == tgid)
             forward_from = msg.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
         else
-            forward_from = format_name(msg.forward_from.first_name, msg.forward_from.last_name);
+            forward_from = format_name(msg.forward_from.id, msg.forward_from.first_name, msg.forward_from.last_name);
         message_text = format_newline(msg.text, user, forward_from,
                                       'forward', true);
         if(message_text === null) return;
@@ -387,7 +389,7 @@ irc_c.addListener('names', function(channel, newnicks){
 
 tg.on("inline_query", function(msg){
     console.log("inline_query: id="+msg.id+" query="+msg.query+" offset="+msg.offset);
-    var user = format_name(msg.from.first_name, msg.from.last_name);
+    var user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name);
     var results = [];
     var offset = msg.offset ? msg.offset : 0;
 

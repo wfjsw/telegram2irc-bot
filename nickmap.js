@@ -3,18 +3,18 @@
 var jf = require('jsonfile');
 var names = {};
 
-function setNick(tgname, nick){
+function setNick(id, nick){
 	var names = jf.readFileSync("nicks.json");
-	names[tgname]=nick;
+	names[id]=nick;
 	jf.writeFileSync("nicks.json", names);
 	reload();
 }
 
-function getNick(tgname){
-	if(tgname in names){
-		return names[tgname];
+function getNick(id){
+	if(id in names){
+		return names[id];
 	}
-	return tgname;
+	return false;
 }
 
 function tests(){
