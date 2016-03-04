@@ -178,6 +178,18 @@ irc_c.addListener('action', function (from, to, text) {
     }
 });
 
+
+var topic="";
+
+irc_c.addListener('topic', function (chan, newtopic, nick, message){
+    topic = newtopic;
+    if(nick){
+        tg.sendMessage(config.tg_group_id, "Channel "+chan+" has topic by "+nick+": "+topic);
+    }else{
+        tg.sendMessage(config.tg_group_id, "Channel "+chan+" topic:"+topic);
+    }
+});
+
 function sendimg(fileid, msg, type){
     tg.sendChatAction(msg.chat.id, 'upload_photo');
     tg.getFileLink(fileid).then(function (ret){
@@ -343,6 +355,9 @@ tg.on('message', function(msg) {
                 );
             }
 
+            return;
+        } else if (command[0] == '/topic' || command[0] == '/topic@' + tgusername) {
+            tg.sendMessage(msg.chat.id, "Channel  topic :"+topic);
             return;
         } else if (command[0] == '/me' || command[0] == '/me@' + tgusername) {
             me_message = true;
