@@ -45,6 +45,13 @@ function printf(args) {
     return string;
 }
 
+function cutJJ() {
+    var nick_to_use = comfig.irc_nick;
+    var current_nick = irc_c.nick;
+    if (current_nick != nick_to_use)
+        irc_c.send("/nick" + nick_to_use);
+}
+
 
 function format_name(id, first_name, last_name) {
     var full_name = last_name?
@@ -270,6 +277,10 @@ tg.on('message', function(msg) {
             irc_c.join(config.irc_channel);
             tg.sendMessage(msg.chat.id, "`EXECUTE ORDER REJOIN`", {parse_mode: 'Markdown'});
             return;
+        } else if (command[0] == '/cutjj' || command[0] == '/cutjj@' + tgusername) {
+            cutJJ();
+            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER CUTJJ`", { parse_mode: 'Markdown' });
+            return;
         } else if (command[0] == '/version' || command[0] == '/version@' + tgusername) {
             tg.sendMessage(msg.chat.id, version, { parse_mode: 'Markdown' });
             return;
@@ -450,4 +461,4 @@ tg.getMe().then(function(ret){
     console.log('PROJECT AKARIN INITATED');
 });
 irc_c.join(config.irc_channel);
-
+var interval_cut = setInterval(cutJJ, 5 * 60 * 1000);
