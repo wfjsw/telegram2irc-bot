@@ -1,4 +1,4 @@
-# orz-telegram-bot
+# telegram2irc-bot
 
 A Telegram-IRC sync bot.
 
@@ -6,12 +6,31 @@ A Telegram-IRC sync bot.
 
 Create a config file `config.js` just like the example `config.js.example` and set your configuration, then run `main.js` to start.
 
-## Image forwarding
+**REMEMBER TO DISABLE PRIVACY MODE @BotFather**
 
-Because the upstream has not updated yet, you have to hack the library `telegram-bot` if you want to enable image forwarding.
+## Default Command
 
-In `node_modules/telegram-bot/lib/telegram.js`:
+No helps will be provided in-bot.  
+Commands are **cASe SeNsITivE** !
 
-    methods = "getMe\nsendMessage\nforwardMessage\nsendPhoto\nsendAudio\nsendDocument\nsendSticker\nsendVideo\nsendLocation\nsendChatAction\ngetUserProfilePhotos\ngetUpdates\nsetWebhook\ngetFile";
-    
-Add the method `getFile` to the list as above.
+```
+/syn - ACK
+/unhold - START-FORWARDING
+/hold - STOP-FORWARDING
+/ircrejoin - PART & JOIN THE CHANNEL
+/ircsay content - SPEAK RAW TO IRC
+/nick yournick - CHANGE WHAT YOU LOOK LIKE IN IRC
+/blocklist - BLOCKLIST OVERVIEW
+/blocki2t nickname - BLOCK IRC -> TELEGRAM
+/blockt2i [ID] - BLOCK TELEGRAM -> IRC BY REPLY || ID
+/me action - SEND ACTION MSG TO IRC
+/version - GET CURRENT WRITEDATE
+```
+
+## Pro Tip
+
+To reduce memory usage, start the bot with
+
+```
+node --max-new-space-size=16384 --max-old-space-size=256 main
+```
