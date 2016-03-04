@@ -46,7 +46,7 @@ function printf(args) {
 }
 
 function cutJJ() {
-    var nick_to_use = comfig.irc_nick;
+    var nick_to_use = config.irc_nick;
     var current_nick = irc_c.nick;
     if (current_nick != nick_to_use)
         irc_c.send("/nick" + nick_to_use);
@@ -141,8 +141,6 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
         resetTg();
     }
 
-    if(config.other_bridge_bots.indexOf(from) == -1)
-        message = printf('[%1] %2', from, message);
     // say last context to irc
     if (message.match(/\s*\\last\s*/)){
         var last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
