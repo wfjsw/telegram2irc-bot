@@ -13,8 +13,9 @@ function setNick(id, nick){
 function getNick(id){
 	if(id in names){
 		return names[id];
-	}
-	return false;
+    } else {
+        return false;
+    }
 }
 
 function tests(){

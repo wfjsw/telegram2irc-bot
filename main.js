@@ -299,7 +299,7 @@ tg.on('message', function(msg) {
             return;
         } else if (command[0] == '/cutjj' || command[0] == '/cutjj@' + tgusername) {
             cutJJ();
-            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER CUTJJ`", { parse_mode: 'Markdown' });
+            tg.sendMessage(msg.chat.id, "( *・ω・)✄╰ひ╯");
             return;
         } else if (command[0] == '/version' || command[0] == '/version@' + tgusername) {
             tg.sendMessage(msg.chat.id, version, { parse_mode: 'Markdown' });

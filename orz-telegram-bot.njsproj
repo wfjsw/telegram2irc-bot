@@ -16,7 +16,6 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
   <ItemGroup>
-    <Content Include="nicks.json" />
     <Content Include="package.json" />
     <Compile Include="main.js" />
   </ItemGroup>
