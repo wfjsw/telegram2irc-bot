@@ -48,8 +48,9 @@ function printf(args) {
 function cutJJ() {
     var nick_to_use = config.irc_nick;
     var current_nick = irc_c.nick;
+    console.log('cutjj: ' + nick_to_use + ' , ' + current_nick);
     if (current_nick != nick_to_use)
-        irc_c.send("/nick" + nick_to_use);
+        irc_c.send("nick", nick_to_use);
 }
 
 
