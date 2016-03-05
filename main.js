@@ -46,7 +46,7 @@ function printf(args) {
 }
 
 function cutJJ() {
-    var nick_to_use = comfig.irc_nick;
+    var nick_to_use = config.irc_nick;
     var current_nick = irc_c.nick;
     if (current_nick != nick_to_use)
         irc_c.send("/nick" + nick_to_use);
@@ -141,18 +141,22 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
         resetTg();
     }
 
+    if (message.match(/\s*\\invite/)){
+        var link= config.tg_invite_link;
+        var msg = "Join the telegram group: "+link;
+        irc_c.say(config.irc_channel, msg);
+        message += "\n"+msg;
+    }
+
     if(config.other_bridge_bots.indexOf(from) == -1)
         message = printf('[%1] %2', from, message);
     // say last context to irc
-    if (message.match(/\s*\\last\s*/)){
+    if (message.match(/\s*\\last\w*/)){
         var last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
         irc_c.say(config.irc_channel, last_msg);
         console.log(last_msg);
         message += "\n"+last_msg;
     }
-
-    if(config.other_bridge_bots.indexOf(from) == -1)
-        message = printf('[%1] %2', from, message);
 
     tg.sendMessage(config.tg_group_id, message);
 });
@@ -171,6 +175,18 @@ irc_c.addListener('action', function (from, to, text) {
         else
             text = printf('** %1 **', text);
         tg.sendMessage(config.tg_group_id, text);
+    }
+});
+
+
+var topic="";
+
+irc_c.addListener('topic', function (chan, newtopic, nick, message){
+    topic = newtopic;
+    if(nick){
+        tg.sendMessage(config.tg_group_id, "Channel "+chan+" has topic by "+nick+": "+topic);
+    }else{
+        tg.sendMessage(config.tg_group_id, "Channel "+chan+" topic:"+topic);
     }
 });
 
@@ -194,6 +210,10 @@ tg.on('message', function(msg) {
     // Process Commands.
     var me_message = false;
     console.log(printf('From ID %1  --  %2', msg.chat.id, msg.text));
+
+    // enforce group chat
+    if (msg.chat.id != config.tg_group_id) return;
+
     if(config.irc_photo_forwarding_enabled && msg.photo){
         var largest = {file_size: 0};
         for(var i in msg.photo){
@@ -336,12 +356,13 @@ tg.on('message', function(msg) {
             }
 
             return;
+        } else if (command[0] == '/topic' || command[0] == '/topic@' + tgusername) {
+            tg.sendMessage(msg.chat.id, "Channel  topic :"+topic);
+            return;
         } else if (command[0] == '/me' || command[0] == '/me@' + tgusername) {
             me_message = true;
             msg.text = msg.text.substring(command[0].length);
             // passthrough to allow /me action
-        } else if (command[0] == '/reset' || command[0] == '/reset@' + tgusername) {
-            resetTg();
         } else {
             return;
         }
@@ -359,8 +380,13 @@ tg.on('message', function(msg) {
     user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name);
     if(msg.reply_to_message){
         if (msg.reply_to_message.from.id == tgid){
-            reply_to = msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
-            text = msg.reply_to_message.text.substr(reply_to.length+3);
+            if(msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)){
+                reply_to = msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
+                text = msg.reply_to_message.text.substr(reply_to.length+3);
+            }else{
+                reply_to = "[Nobody]";
+                text = msg.reply_to_message.text;
+            }
         }else{
             reply_to = format_name(msg.reply_to_message.from.id, msg.reply_to_message.from.first_name, msg.reply_to_message.from.last_name);
             text = msg.reply_to_message.text;
@@ -439,13 +465,10 @@ irc_c.join(config.irc_channel);
 function resetTg(){
     tg.sendMessage(config.tg_group_id, "`REQUESTED RESET BY USER`", { parse_mode: 'Markdown' });
     irc_c.part(config.irc_channel);
-    process.exit(2);
+    process.exit();
 }
 
 
-tg.on('error', function(){
-    resetTg();
-});
 // Load blocklist
 blocki2t = config.blocki2t;
 blockt2i = config.blockt2i;
