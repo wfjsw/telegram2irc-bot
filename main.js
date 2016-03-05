@@ -3,7 +3,7 @@
 // Total hours wasted here -> 12
 // ^ Do Not Remove This!
 
-var version = "`PROJECT AKARIN VERSION 20160304`";
+var version = "`PROJECT AKARIN VERSION 20160305`";
 
 'use strict';
 
@@ -485,4 +485,6 @@ tg.getMe().then(function(ret){
     console.log('PROJECT AKARIN INITATED');
 });
 irc_c.join(config.irc_channel);
-var interval_cut = setInterval(cutJJ, 5 * 60 * 1000);
+
+var cutinv = config.cutjj_interval ? config.cutjj_interval : 5 * 60 * 1000;
+var interval_cut = setInterval(cutJJ, cutinv);

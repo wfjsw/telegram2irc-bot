@@ -1,6 +1,6 @@
 {
   "name": "telegram2irc-bot",
-  "version": "20160304",
+  "version": "20160305",
   "description": "An IRC-Telegram Bridge for ##Orz",
   "author": "Jianshu Wang",
   "bin": {

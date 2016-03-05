@@ -14,6 +14,8 @@ exports.irc_port = 6667;
 exports.irc_ssl = false;
 exports.irc_ssl_self_signed = false;
 
+exports.cutjj_interval = 5 * 60 * 1000;
+
 // Turn On IRC Nick Auth By set SASL to true
 exports.irc_sasl = false;
 exports.irc_username = '';
