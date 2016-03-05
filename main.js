@@ -58,7 +58,7 @@ function format_name(id, first_name, last_name) {
     var full_name = last_name?
         first_name + ' ' + last_name:
         first_name;
-    var full_name_1 = nickmap.getNick(full_name);
+    var full_name_1 = nickmap.getNick(id);
     full_name_1 = full_name_1 ? full_name_1 : full_name;
     // if(full_name.length > 24)
         // full_name = full_name.slice(0, 24);
