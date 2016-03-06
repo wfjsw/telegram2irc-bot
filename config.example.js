@@ -37,3 +37,5 @@ exports.blocki2t = [];
 /** Block specific users from Telegram to IRC, use UserID here. 
  *  Acquire ID by forwarding a user's message to @userinfobot. */
 exports.blockt2i = []; 
+
+exports.use_kaomoji = true;
