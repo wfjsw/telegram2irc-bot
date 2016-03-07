@@ -3,7 +3,7 @@
 // Total hours wasted here -> 12
 // ^ Do Not Remove This!
 
-var version = "`PROJECT AKARIN VERSION 20160305`";
+var version = "`PROJECT AKARIN VERSION 20160307`";
 
 'use strict';
 
@@ -231,6 +231,16 @@ tg.on('message', function(msg) {
     } else if (config.irc_photo_forwarding_enabled && msg.document){
         sendimg(msg.document.file_id, msg,
             printf('File(%1)', msg.document.mime_type));
+    } else if (config.irc_participant_enabled && msg.new_chat_participant){
+        var part = msg.new_chat_participant;
+        var username = format_name(part.id, part.first_name, part.last_name);
+        var ircmesg = "New user \""+ username +"\" joined Telegram group. Welcome!"
+        irc_c.say(config.irc_channel, ircmesg);
+    } else if (config.irc_participant_enabled && msg.left_chat_participant){
+        var part = msg.left_chat_participant;
+        var username = format_name(part.id, part.first_name, part.last_name);
+        var ircmesg = "User \""+ username +"\" left Telegram group. See you~"
+        irc_c.say(config.irc_channel, ircmesg);
     } else if (msg.text && msg.text.slice(0, 1) == '/') {
         var command = msg.text.split(' ');
         if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
