@@ -292,7 +292,7 @@ tg.on('message', function(msg) {
             command.shift();
             txtn = command.join(" ");
             irc_c.say(config.irc_channel, txtn);
-            return;
+            // fall through
         } else if (command[0] == '/ircrejoin' || command[0] == '/ircrejoin@' + tgusername) {
             irc_c.part(config.irc_channel);
             irc_c.join(config.irc_channel);
