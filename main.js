@@ -300,7 +300,7 @@ tg.on('message', function(msg) {
             return;
         } else if (command[0] == '/cutjj' || command[0] == '/cutjj@' + tgusername) {
             cutJJ();
-            var cutmsg = config.use_kaomoji ? "( *・ω・)✄╰ひ╯" : "EXECUTE ORDER TAIL_TRIM";
+            var cutmsg = config.use_kaomoji ? "( *・ω・)✄╰ひ╯" : "`EXECUTE ORDER TAIL-TRIM`";
             tg.sendMessage(msg.chat.id, cutmsg, { parse_mode: 'Markdown' });
             return;
         } else if (command[0] == '/version' || command[0] == '/version@' + tgusername) {
