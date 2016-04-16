@@ -260,12 +260,13 @@ tg.on('message', function(msg) {
         if (!connection[msg.chat.id] && command[0] == '/connect' || command[0] == '/connect@' + tgusername) {
             connection[msg.chat.id] = command[1];
             Mirrori2t();
-            irc_c.join(connection[msg.chat.id]);
+            irc_c.join(command[1]);
             tg.sendMessage(msg.chat.id, "`CONNECTED TO " + config.irc_server + "/" + command[1] + "`", { parse_mode: 'Markdown' });
             return;
         }
         if (connection[msg.chat.id]) {
-            if (!connection[msg.chat.id] && command[0] == '/disconnect' || command[0] == '/disconnect@' + tgusername) {
+            if (command[0] == '/disconnect' || command[0] == '/disconnect@' + tgusername) {
+                irc_c.part(connection[msg.chat.id]);
                 delete connection[msg.chat.id];
                 Mirrori2t();
                 tg.sendMessage(msg.chat.id, "`DISCONNECTED`", { parse_mode: 'Markdown' });
