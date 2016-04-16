@@ -62,7 +62,7 @@ function cutJJ() {
 function Mirrori2t(){
     connection_i2t = {}; // Initalize
     for (i in connection) {
-        connection_i2t[connection[i].channel] = i;
+        connection_i2t[connection[i]] = i;
     }
     jf.writeFileSync("connections.json", connection);
 }
