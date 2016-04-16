@@ -64,6 +64,7 @@ function Mirrori2t(){
     for (i in connection) {
         connection_i2t[connection[i].channel] = i;
     }
+    jf.writeFileSync("connections.json", connections);
 }
 
 
@@ -259,6 +260,7 @@ tg.on('message', function(msg) {
         if (!connection[msg.chat.id] && command[0] == '/connect' || command[0] == '/connect@' + tgusername) {
             connection[msg.chat.id] = command[1];
             Mirrori2t();
+            irc_c.join(connection[msg.chat.id]);
             tg.sendMessage(msg.chat.id, "`CONNECTED TO " + config.irc_server + "/" + command[1] + "`", { parse_mode: 'Markdown' });
             return;
         }
