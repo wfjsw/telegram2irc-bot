@@ -64,7 +64,7 @@ function Mirrori2t(){
     for (i in connection) {
         connection_i2t[connection[i].channel] = i;
     }
-    jf.writeFileSync("connections.json", connections);
+    jf.writeFileSync("connections.json", connection);
 }
 
 
