@@ -1,6 +1,6 @@
 {
   "name": "telegram2irc-bot",
-  "version": "16.3.5",
+  "version": "16.4.16",
   "description": "An IRC-Telegram Bridge for ##Orz",
   "author": "Jianshu Wang",
   "bin": {
@@ -9,10 +9,9 @@
   "dependencies": {
     "encoding": "^0.1.11",
     "irc": "^0.3.12",
+    "jsonfile": "^2.2.3",
     "node-telegram-bot-api": "^0.19.2",
-    "request": "^2.61.0",
-    "encoding": "^0.1.11",
-    "jsonfile": "^2.2.3"
+    "request": "^2.71.0"
   },
   "private": true
 }
