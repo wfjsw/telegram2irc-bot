@@ -231,10 +231,10 @@ tg.on('message', function(msg) {
     } else if (config.irc_photo_forwarding_enabled && msg.document){
         sendimg(msg.document.file_id, msg,
             printf('File(%1)', msg.document.mime_type));
-    } else if (msg.text && msg.text.slice(0, 1) == '/') {
+    } else if (msg.text && msg.text[0] == '/') {
         var command = msg.text.split(' ');
 	var arr = command[0].split('@');
-	var operation = arr[0];
+	var operation = arr[0].slice(1, arr[0].length);
 	if(arr.length > 2 || arr[1] != tgusername)
 	    return;
 	switch(operation) {
