@@ -3,7 +3,7 @@
 // Total hours wasted here -> 12
 // ^ Do Not Remove This!
 
-var version = "`PROJECT AKARIN VERSION 20160305`";
+var version = '`PROJECT AKARIN VERSION 20160305`';
 
 'use strict';
 
@@ -11,9 +11,9 @@ var version = "`PROJECT AKARIN VERSION 20160305`";
 var Telegram = require('node-telegram-bot-api');
 var IRC = require('irc');
 var config = require('./config.js');
-var pvimcn = require("./pvimcn.js");
-var encoding = require("encoding");
-var nickmap = require("./nickmap.js");
+var pvimcn = require('./pvimcn.js');
+var encoding = require('encoding');
+var nickmap = require('./nickmap.js');
 
 var tg = new Telegram(config.tg_bot_api_key, { polling: true });
 var irc_c = new IRC.Client(config.irc_server, config.irc_nick, {
@@ -35,14 +35,14 @@ var msgfilter = function (s) { return s; };
 var inittime = Math.round(new Date().getTime() / 1000);
 
 
-function printf(args) {
-    var string = arguments[0];
-    /* note that %n in the string must be in ascending order */
-    /* like 'Foo %1 Bar %2 %3' */
-    var i;
-    for(i=arguments.length-1; i>0; i--)
-        string = string.replace('%'+i, arguments[i]);
-    return string;
+function printf() {
+    var str = arguments[0];
+    var args = arguments;
+    str = str.replace(/%(\d+)|%{(\d+)}/g, function(match, number1, number2){
+	var number = number1? number1: number2;
+	return (typeof args[number] != 'undefined')? args[number]: match;
+    });
+    return str;
 }
 
 function cutJJ() {
@@ -50,7 +50,7 @@ function cutJJ() {
     var current_nick = irc_c.nick;
     console.log('cutjj: ' + nick_to_use + ' , ' + current_nick);
     if (current_nick != nick_to_use)
-        irc_c.send("nick", nick_to_use);
+        irc_c.send('nick', nick_to_use);
 }
 
 
@@ -82,7 +82,7 @@ function format_newline(text, user, target, type) {
         if(config.irc_long_message_paste_enabled){
             console.log(printf('User [%1] send a long message', user));
             pvimcn.pvim(text, function cb(err, result){
-                console.log("pvim result: "+ result);
+                console.log('pvim result: ' + result);
                 if(err)
                     irc_c.say(config.irc_channel,
                                printf('[%1] %2', user,
@@ -98,7 +98,7 @@ function format_newline(text, user, target, type) {
             });
             if(arr.length > config.irc_line_count_limit){
                 arr = arr.slice(0, config.irc_line_count_limit);
-                arr.push("(line count limit exceeded)");
+                arr.push('(line count limit exceeded)');
             }
             text = arr.join('\n');
         }
@@ -111,20 +111,20 @@ function format_newline(text, user, target, type) {
 // Event to write config on exit.
 process.on('SIGINT', function (code) {
     console.log('About to exit with code:', code);
-    tg.sendMessage(config.tg_group_id, "`COMMITING INTERRUPT`", { parse_mode: 'Markdown' });
+    tg.sendMessage(config.tg_group_id, '`COMMITING INTERRUPT`', { parse_mode: 'Markdown' });
     irc_c.part(config.irc_channel);
     process.exit();
 });
 process.on('SIGTERM', function (code) {
     console.log('About to exit with code:', code);
-    tg.sendMessage(config.tg_group_id, "`COMMITING TERMINATE`", { parse_mode: 'Markdown' });
+    tg.sendMessage(config.tg_group_id, '`COMMITING TERMINATE`', { parse_mode: 'Markdown' });
     irc_c.part(config.irc_channel);
     process.exit();
 });
 // End Exit Event.
 
 // record last reply context
-var lastContext = {name:"", text:"", byname:""};
+var lastContext = {name:'', text:'', byname:''};
 
 
 irc_c.addListener('message' + config.irc_channel, function (from, message) {
@@ -132,7 +132,7 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
 
     // Blocking Enforcer
     if (blocki2t.indexOf(from) > -1 || !enabled){
-        console.log("blocked");
+        console.log('blocked');
         return;
     }
 
@@ -144,9 +144,9 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
 
     if (message.match(/\s*\\invite/)){
         var link= config.tg_invite_link;
-        var msg = "Join the telegram group: "+link;
+        var msg = 'Join the telegram group: ' + link;
         irc_c.say(config.irc_channel, msg);
-        message += "\n"+msg;
+        message += '\n' + msg;
     }
 
     if(config.other_bridge_bots.indexOf(from) == -1)
@@ -156,7 +156,7 @@ irc_c.addListener('message' + config.irc_channel, function (from, message) {
         var last_msg = printf('Replied %1: %2', lastContext.name, lastContext.text);
         irc_c.say(config.irc_channel, last_msg);
         console.log(last_msg);
-        message += "\n"+last_msg;
+        message += '\n' + last_msg;
     }
 
     tg.sendMessage(config.tg_group_id, message);
@@ -185,9 +185,9 @@ var topic="";
 irc_c.addListener('topic', function (chan, newtopic, nick, message){
     topic = newtopic;
     if(nick){
-        tg.sendMessage(config.tg_group_id, "Channel "+chan+" has topic by "+nick+": "+topic);
+        tg.sendMessage(config.tg_group_id, printf('Channel %1 has topic by %2: %3', chan, nick, topic));
     }else{
-        tg.sendMessage(config.tg_group_id, "Channel "+chan+" topic:"+topic);
+        tg.sendMessage(config.tg_group_id, printf('Channel %1 topic: %2', chan, topic));
     }
 });
 
@@ -199,9 +199,9 @@ function sendimg(fileid, msg, type){
             console.log(ret);
             var user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name);
             if (msg.caption){
-                irc_c.say(config.irc_channel, printf("[%1] %2: %3 Saying: %4", user, type, ret.trim(), msg.caption));
+                irc_c.say(config.irc_channel, printf('[%1] %2: %3 Saying: %4', user, type, ret.trim(), msg.caption));
             }else{
-                irc_c.say(config.irc_channel, printf("[%1] %2: %3", user, type, ret.trim()));
+                irc_c.say(config.irc_channel, printf('[%1] %2: %3', user, type, ret.trim()));
             }
         });
     });
@@ -231,19 +231,26 @@ tg.on('message', function(msg) {
     } else if (config.irc_photo_forwarding_enabled && msg.document){
         sendimg(msg.document.file_id, msg,
             printf('File(%1)', msg.document.mime_type));
-    } else if (msg.text && msg.text.slice(0, 1) == '/') {
+    } else if (msg.text && msg.text[0] == '/') {
         var command = msg.text.split(' ');
-        if (command[0] == '/hold' || command[0] == '/hold@' + tgusername) {
+	var arr = command[0].split('@');
+	var operation = arr[0].slice(1, arr[0].length);
+	if(arr.length > 2 || arr[1] != tgusername)
+	    return;
+	switch(operation) {
+	case 'hold':
             irc_c.part(config.irc_channel);
             enabled = false;
             tg.sendMessage(msg.chat.id, "`EXECUTE ORDER STOP-FORWARD`", { parse_mode: 'Markdown' });
             return;
-        } else if (command[0] == '/unhold' || command[0] == '/unhold@' + tgusername) {
+	    break;
+	case 'unhold':
             enabled = true;
             irc_c.join(config.irc_channel);
-            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER START-FORWARD`", { parse_mode: 'Markdown' });
+            tg.sendMessage(msg.chat.id, '`EXECUTE ORDER START-FORWARD`', { parse_mode: 'Markdown' });
             return;
-        } else if (command[0] == '/blocki2t' || command[0] == '/blocki2t@' + tgusername) {
+	    break;
+	case 'blocki2t':
             if (command[1] && blocki2t.indexOf(command[1]) == -1) {
                 blocki2t.push(command[1]);
                 tg.sendMessage(msg.chat.id, '`Temporary Blocked ' + command[1] + ' From IRC to Telegram!`', { parse_mode: 'Markdown' });
@@ -251,7 +258,8 @@ tg.on('message', function(msg) {
                 tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'Markdown' });
             }
             return;
-        } else if (command[0] == '/blockt2i' || command[0] == '/blockt2i@' + tgusername) {
+	    break;
+	case 'blockt2i':
             if (msg.reply_to_message && blockt2i.indexOf(msg.reply_to_message.from.id) == -1) {
                 blockt2i.push(msg.reply_to_message.from.id);
                 tg.sendMessage(msg.chat.id, '`Temporary Blocked ' + msg.reply_to_message.from.username + ' From Telegram to IRC!`', { parse_mode: 'Markdown' });
@@ -262,7 +270,8 @@ tg.on('message', function(msg) {
                 tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'Markdown' });
             }
             return;
-        } else if (command[0] == '/unblocki2t' || command[0] == '/unblocki2t@' + tgusername) {
+	    break;
+	case 'unblocki2t':
             if (command[1] && blocki2t.indexOf(command[1]) > -1) {
                 blocki2t.splice(blocki2t.indexOf(command[1]), 1);
                 tg.sendMessage(msg.chat.id, '`Temporary Unblocked ' + command[1] + ' From IRC to Telegram!`', { parse_mode: 'Markdown' });
@@ -270,7 +279,8 @@ tg.on('message', function(msg) {
                 tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'Markdown' });
             }
             return;
-        } else if (command[0] == '/unblockt2i' || command[0] == '/unblockt2i@' + tgusername) {
+	    break;
+	case 'unblockt2i':
             if (msg.reply_to_message && blockt2i.indexOf(msg.reply_to_message.from.id) > -1) {
                 blockt2i.splice(blockt2i.indexOf(msg.reply_to_message.from.id), 1);
                 tg.sendMessage(msg.chat.id, '`Temporary Unblocked ' + msg.reply_to_message.from.username + ' From Telegram to IRC!`', { parse_mode: 'Markdown' });
@@ -281,40 +291,48 @@ tg.on('message', function(msg) {
                 tg.sendMessage(msg.chat.id, '`ERROR OCCURED: TARGET NOT FOUND`', { parse_mode: 'Markdown' });
             }
             return;
-        } else if (command[0] == '/reloadblocklist' || command[0] == '/reloadblocklist@' + tgusername) {
+	    break;
+	case 'reloadblocklist':
             // Load blocklist
             blocki2t = config.blocki2t;
             blockt2i = config.blockt2i;
-            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER BLOCKLIST-RELOAD`", { parse_mode: 'Markdown' });
+            tg.sendMessage(msg.chat.id, '`EXECUTE ORDER BLOCKLIST-RELOAD`', { parse_mode: 'Markdown' });
             return;
-        } else if (command[0] == '/ircsay' || command[0] == '/ircsay@' + tgusername) {
+	    break;
+	case 'ircsay':
             var txtn;
             command.shift();
             txtn = command.join(" ");
             irc_c.say(config.irc_channel, txtn);
             return;
-        } else if (command[0] == '/ircrejoin' || command[0] == '/ircrejoin@' + tgusername) {
+	    break;
+	case 'ircrejoin':
             irc_c.part(config.irc_channel);
             irc_c.join(config.irc_channel);
-            tg.sendMessage(msg.chat.id, "`EXECUTE ORDER REJOIN`", {parse_mode: 'Markdown'});
+            tg.sendMessage(msg.chat.id, '`EXECUTE ORDER REJOIN`', {parse_mode: 'Markdown'});
             return;
-        } else if (command[0] == '/cutjj' || command[0] == '/cutjj@' + tgusername) {
+	    break;
+	case 'cutjj':
             cutJJ();
-            var cutmsg = config.use_kaomoji ? "( *・ω・)✄╰ひ╯" : "`EXECUTE ORDER TAIL-TRIM`";
+            var cutmsg = config.use_kaomoji ? '( *・ω・)✄╰ひ╯' : '`EXECUTE ORDER TAIL-TRIM`';
             tg.sendMessage(msg.chat.id, cutmsg, { parse_mode: 'Markdown' });
             return;
-        } else if (command[0] == '/version' || command[0] == '/version@' + tgusername) {
+	    break;
+	case 'version':
             tg.sendMessage(msg.chat.id, version, { parse_mode: 'Markdown' });
             return;
-        } else if (command[0] == '/uptime' || command[0] == '/uptime@' + tgusername) {
+	    break;
+	case 'uptime':
             var uptimestr = '`PROJECT AKARIN UPTIME: ' + process.uptime() + ' seconds`\n';
-            uptimestr += '`OS UPTIME: ' + require('os').uptime() + ' seconds`'
+            uptimestr += '`OS UPTIME: ' + require('os').uptime() + ' seconds`';
             tg.sendMessage(msg.chat.id, uptimestr, { parse_mode: 'Markdown' });
             return;
-        } else if (command[0] == '/syn' || command[0] == '/syn@' + tgusername) {
-            tg.sendMessage(msg.chat.id, "`ACK`", { parse_mode: 'Markdown' });
+	    break;
+	case 'syn':
+            tg.sendMessage(msg.chat.id, '`ACK`', { parse_mode: 'Markdown' });
             return;
-        } else if (command[0] == '/blocklist' || command[0] == '/blocklist@' + tgusername) {
+	    break;
+	case 'blocklist':
             // Show blocklist
             tg.sendMessage(
                 msg.chat.id,
@@ -322,18 +340,20 @@ tg.on('message', function(msg) {
             );
 
             return;
-        } else if (command[0] == '/nick' || command[0] == '/nick@' + tgusername) {
+	    break;
+	case 'nick':
             // Load blocklist
+	    var nick, first_name, last_name, full_name, notifymsg;
             if(command[1]){
-                var nick=command.slice(1).join(" ").trim();
-                var first_name = msg.from.first_name;
-                var last_name = msg.from.last_name;
-                var full_name = last_name?
+                nick = command.slice(1).join(" ").trim();
+                first_name = msg.from.first_name;
+                last_name = msg.from.last_name;
+                full_name = last_name?
                         first_name + ' ' + last_name:
                         first_name;
                 nickmap.setNick(msg.from.id, nick);
 
-                var notifymsg = printf("User \"%1\" changed nick to \"%2\"", full_name, nick);
+                notifymsg = printf('User "%1" changed nick to "%2"', full_name, nick);
                 tg.sendMessage(
                     msg.chat.id,
                     notifymsg
@@ -341,15 +361,15 @@ tg.on('message', function(msg) {
 
                 irc_c.say(config.irc_channel, notifymsg);
             }else{
-                var first_name = msg.from.first_name;
-                var last_name = msg.from.last_name;
-                var full_name = last_name?
+                first_name = msg.from.first_name;
+                last_name = msg.from.last_name;
+                full_name = last_name?
                         first_name + ' ' + last_name:
                         first_name;
-                var nick = nickmap.getNick(msg.from.id);
+                nick = nickmap.getNick(msg.from.id);
                 nick = nick ? nick : full_name;
 
-                var notifymsg = printf("User \"%1\" has nick \"%2\"", full_name, nick);
+                notifymsg = printf('User "%1" has nick "%2"', full_name, nick);
 
                 tg.sendMessage(
                     msg.chat.id,
@@ -358,14 +378,17 @@ tg.on('message', function(msg) {
             }
 
             return;
-        } else if (command[0] == '/topic' || command[0] == '/topic@' + tgusername) {
-            tg.sendMessage(msg.chat.id, "Channel  topic :"+topic);
+	    break;
+	case 'topic':
+            tg.sendMessage(msg.chat.id, 'Channel  topic :' + topic);
             return;
-        } else if (command[0] == '/me' || command[0] == '/me@' + tgusername) {
+	    break;
+	case 'me':
             me_message = true;
             msg.text = msg.text.substring(command[0].length);
             // passthrough to allow /me action
-        } else {
+	    break;
+	default:
             return;
         }
     }
@@ -426,8 +449,8 @@ irc_c.addListener('names', function(channel, newnicks){
     nicks = newnicks;
 });
 
-tg.on("inline_query", function(msg){
-    console.log("inline_query: id="+msg.id+" query="+msg.query+" offset="+msg.offset);
+tg.on('inline_query', function(msg){
+    console.log(printf('inline_query: id=%1 query=%2 offset=%3', msg.id, msg.query, msg.offset));
     var user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name);
     var results = [];
     var offset = msg.offset ? msg.offset : 0;
@@ -440,15 +463,15 @@ tg.on("inline_query", function(msg){
     for(var i in names){
         var key = names[i];
         results.push({
-            type:"article",
-            id: msg.id+"/"+key,
-            title: ""+nicks[key]+key,
-            description: "预览: " + key + ": "+ msg.query,
-            message_text: key + ": "+ msg.query
+            type: 'article',
+            id: msg.id + '/' + key,
+            title: '' + nicks[key] + key,
+            description: 'Preview: ' + key + ': ' + msg.query,
+            message_text: key + ': ' + msg.query
         });
     }
     tg.answerInlineQuery(
-        ""+msg.id,
+        ''+msg.id,
         results,
         {
            cache_time: 10,
@@ -465,7 +488,7 @@ irc_c.addListener('error', function(message) {
 irc_c.join(config.irc_channel);
 
 function resetTg(){
-    tg.sendMessage(config.tg_group_id, "`REQUESTED RESET BY USER`", { parse_mode: 'Markdown' });
+    tg.sendMessage(config.tg_group_id, '`REQUESTED RESET BY USER`', { parse_mode: 'Markdown' });
     irc_c.part(config.irc_channel);
     process.exit();
 }
