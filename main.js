@@ -180,7 +180,7 @@ irc_c.addListener('message', function (from, to, message) {
     //    message += "\n"+last_msg;
     //}
 
-    tg.sendMessage(connection_i2t[to], message);
+    tg.sendMessage(connection_i2t[to.toLowerCase()], message);
 });
 
 
@@ -199,7 +199,7 @@ irc_c.addListener('action', function (from, to, text) {
             text = printf('** %1 %2 **', from, text);
         else
             text = printf('** %1 **', text);
-        tg.sendMessage(connection_i2t[to], text);
+        tg.sendMessage(connection_i2t[to.toLowerCase()], text);
     }
 });
 
@@ -207,11 +207,11 @@ irc_c.addListener('action', function (from, to, text) {
 var topic= {};
 
 irc_c.addListener('topic', function (chan, newtopic, nick, message){
-    topic[chan] = newtopic;
+    topic[chan.toLowerCase()] = newtopic;
     if(nick){
-        tg.sendMessage(connection_i2t[chan], "Channel "+chan+" has topic by "+nick+": "+topic[chan]);
+        tg.sendMessage(connection_i2t[chan.toLowerCase()], "Channel "+chan+" has topic by "+nick+": "+topic[chan.toLowerCase()]);
     }else{
-        tg.sendMessage(connection_i2t[chan], "Channel "+chan+" topic:"+topic[chan]);
+        tg.sendMessage(connection_i2t[chan.toLowerCase()], "Channel "+chan+" topic:"+topic[chan.toLowerCase()]);
     }
 });
 
@@ -258,7 +258,7 @@ tg.on('message', function(msg) {
     } else if (msg.text && msg.text.slice(0, 1) == '/') {
         var command = msg.text.split(' ');
         if (!connection[msg.chat.id] && command[0] == '/connect' || command[0] == '/connect@' + tgusername) {
-            connection[msg.chat.id] = command[1];
+            connection[msg.chat.id] = command[1].toLowerCase();
             Mirrori2t();
             irc_c.join(command[1]);
             tg.sendMessage(msg.chat.id, "`CONNECTED TO " + config.irc_server + "/" + command[1] + "`", { parse_mode: 'Markdown' });
@@ -398,7 +398,7 @@ tg.on('message', function(msg) {
                 
                 return;
             } else if (command[0] == '/topic' || command[0] == '/topic@' + tgusername) {
-                tg.sendMessage(msg.chat.id, "Channel  topic :" + topic[connection[msg.chat.id]]);
+                tg.sendMessage(msg.chat.id, "Channel  topic :" + topic[connection[msg.chat.id].toLowerCase()]);
                 return;
             } else if (command[0] == '/me' || command[0] == '/me@' + tgusername) {
                 me_message = true;
