@@ -53,15 +53,72 @@ function cutJJ() {
         irc_c.send("nick", nick_to_use);
 }
 
+var UnicodeString = (function() {
+    function surrogatePairToCodePoint(charCode1, charCode2) {
+        return ((charCode1 & 0x3FF) << 10) + (charCode2 & 0x3FF) + 0x10000;
+    }
+
+    function stringToCodePointArray(str) {
+        var codePoints = [], i = 0, charCode;
+        while (i < str.length) {
+            charCode = str.charCodeAt(i);
+            if ((charCode & 0xF800) == 0xD800) {
+                codePoints.push(surrogatePairToCodePoint(charCode, str.charCodeAt(++i)));
+            } else {
+                codePoints.push(charCode);
+            }
+            ++i;
+        }
+        return codePoints;
+    }
+
+    function codePointArrayToString(codePoints) {
+        var stringParts = [];
+        for (var i = 0, len = codePoints.length, codePoint, offset, codePointCharCodes; i < len; ++i) {
+            codePoint = codePoints[i];
+            if (codePoint > 0xFFFF) {
+                offset = codePoint - 0x10000;
+                codePointCharCodes = [0xD800 + (offset >> 10), 0xDC00 + (offset & 0x3FF)];
+            } else {
+                codePointCharCodes = [codePoint];
+            }
+            stringParts.push(String.fromCharCode.apply(String, codePointCharCodes));
+        }
+        return stringParts.join("");
+    }
+
+    function UnicodeString(arg) {
+        if (this instanceof UnicodeString) {
+            this.codePoints = (typeof arg == "string") ? stringToCodePointArray(arg) : arg;
+            this.length = this.codePoints.length;
+        } else {
+            return new UnicodeString(arg);
+        }
+    }
+
+    UnicodeString.prototype = {
+        slice: function(start, end) {
+            return new UnicodeString(this.codePoints.slice(start, end));
+        },
+
+        toString: function() {
+            return codePointArrayToString(this.codePoints);
+        }
+    };
+
+
+    return UnicodeString;
+})();
+
 
 function format_name(id, first_name, last_name) {
     var full_name = last_name?
         first_name + ' ' + last_name:
         first_name;
     var full_name_1 = nickmap.getNick(id);
-    full_name_1 = full_name_1 ? full_name_1 : full_name;
-    // if(full_name.length > 24)
-        // full_name = full_name.slice(0, 24);
+    full_name_1 = UnicodeString(full_name_1 ? full_name_1 : full_name);
+    if(full_name_1.length > 15)
+        full_name_1 = full_name_1.slice(0, 15);
     return full_name_1;
 }
 
@@ -197,11 +254,16 @@ function sendimg(fileid, msg, type){
         var url = ret;
         pvimcn.imgvim(url, function(err,ret){
             console.log(ret);
+	    var trimmed = ret.trim();
+	    if (trimmed.endsWith("webp")){
+		    trimmed = trimmed.slice(0, trimmed.length - "webp".length);
+		    trimmed += "png";
+	    }
             var user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name);
             if (msg.caption){
-                irc_c.say(config.irc_channel, printf("[%1] %2: %3 Saying: %4", user, type, ret.trim(), msg.caption));
+                irc_c.say(config.irc_channel, printf("[%1] %2: %3 Saying: %4", user, type, trimmed, msg.caption));
             }else{
-                irc_c.say(config.irc_channel, printf("[%1] %2: %3", user, type, ret.trim()));
+                irc_c.say(config.irc_channel, printf("[%1] %2: %3", user, type, trimmed));
             }
         });
     });
@@ -215,7 +277,7 @@ tg.on('message', function(msg) {
     // enforce group chat
     if (msg.chat.id != config.tg_group_id) return;
 
-    if(config.irc_photo_forwarding_enabled && msg.photo){
+    if(config.irc_photo_forwarding_enabled && msg.photo && enabled){
         var largest = {file_size: 0};
         for(var i in msg.photo){
             var p = msg.photo[i];
@@ -224,19 +286,19 @@ tg.on('message', function(msg) {
             }
         }
         sendimg(largest.file_id, msg, 'Img');
-    } else if (config.irc_photo_forwarding_enabled && msg.sticker){
+    } else if (config.irc_photo_forwarding_enabled && msg.sticker && enabled){
         sendimg(msg.sticker.file_id, msg, 'Sticker');
-    } else if (config.irc_photo_forwarding_enabled && msg.voice){
+    } else if (config.irc_photo_forwarding_enabled && msg.voice && enabled){
         sendimg(msg.voice.file_id, msg, 'Voice');
-    } else if (config.irc_photo_forwarding_enabled && msg.document){
+    } else if (config.irc_photo_forwarding_enabled && msg.document && enabled){
         sendimg(msg.document.file_id, msg,
             printf('File(%1)', msg.document.mime_type));
-    } else if (config.irc_participant_enabled && msg.new_chat_participant){
+    } else if (config.irc_participant_enabled && msg.new_chat_participant && enabled){
         var part = msg.new_chat_participant;
         var username = format_name(part.id, part.first_name, part.last_name);
         var ircmesg = "New user \""+ username +"\" joined Telegram group. Welcome!"
         irc_c.say(config.irc_channel, ircmesg);
-    } else if (config.irc_participant_enabled && msg.left_chat_participant){
+    } else if (config.irc_participant_enabled && msg.left_chat_participant && enabled){
         var part = msg.left_chat_participant;
         var username = format_name(part.id, part.first_name, part.last_name);
         var ircmesg = "User \""+ username +"\" left Telegram group. See you~"
@@ -391,8 +453,9 @@ tg.on('message', function(msg) {
     user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name);
     if(msg.reply_to_message){
         if (msg.reply_to_message.from.id == tgid){
-            if(msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)){
-                reply_to = msg.reply_to_message.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1];
+	    var nickregex=/^[\[\(<]([^ ]*)[>\)\]] /;
+            if(msg.reply_to_message.text.match(nickregex)){
+                reply_to = msg.reply_to_message.text.match(nickregex)[1];
                 text = msg.reply_to_message.text.substr(reply_to.length+3);
             }else{
                 reply_to = "[Nobody]";
