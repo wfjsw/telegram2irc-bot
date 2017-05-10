@@ -372,7 +372,8 @@ tg.on('message', function(msg) {
             return;
         } else if (command[0] == '/cutjj' || command[0] == '/cutjj@' + tgusername) {
             cutJJ();
-            tg.sendMessage(msg.chat.id, "( *・ω・)✄╰ひ╯");
+            var cutmsg = config.use_kaomoji ? "( *・ω・)✄╰ひ╯" : "`EXECUTE ORDER TAIL-TRIM`";
+            tg.sendMessage(msg.chat.id, cutmsg, { parse_mode: 'Markdown' });
             return;
         } else if (command[0] == '/version' || command[0] == '/version@' + tgusername) {
             tg.sendMessage(msg.chat.id, version, { parse_mode: 'Markdown' });
