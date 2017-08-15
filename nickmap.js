@@ -4,9 +4,10 @@ var jf = require('jsonfile');
 var names = {};
 
 function setNick(id, nick){
-	var names = jf.readFileSync("config/nicks.json");
+	var file = "/home/orzbot/config/nicks.json";
+	var names = jf.readFileSync(file);
 	names[id]=nick;
-	jf.writeFileSync("config/nicks.json", names);
+	jf.writeFileSync(file, names);
 	reload();
 }
 
