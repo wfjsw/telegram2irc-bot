@@ -34,3 +34,36 @@ To reduce memory usage, start the bot with
 ```
 node --max-new-space-size=16384 --max-old-space-size=256 main
 ```
+
+## Docker Usage
+
+**Step 1: clone this repo to your machine**
+
+```
+git clone https://github.com/farseerfc/orz-telegram-bot.git
+cd orz-telegram-bot/
+```
+
+**Step 2: Build the docker image**
+
+```
+docker build -t orzbot .
+```
+
+**Step 3: Initialize the config file**
+
+choose a place for the config files `<ABSOLUTE_PATH_TO_THE_CONFIGURATION_FOLDER>`, create a config file `config.js` and `nicks.json`
+
+**Step 4: Run the Images**
+
+```
+docker run --name=orzbotd -d -v <ABSOLUTE_PATH_TO_THE_CONFIGURATION_FOLDER>:/home/orzbot/config orzbot
+```
+
+```
+docker logs orzbotd     # check log
+docker logs orzbotd     # stop bot
+docker logs orzbotd     # start bot
+```
+
+That's all. Have fun.
