@@ -14,4 +14,4 @@ VOLUME ["/home/orzbot/.orzbot"]
 
 WORKDIR /home/orzbot/.orzbot
 
-CMD ["node main --max-new-space-size=16384 --max-old-space-size=256"]
+CMD ["./main"]
