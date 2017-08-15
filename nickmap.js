@@ -9,7 +9,7 @@ function root(f) {
 }
 
 function setNick(id, nick){
-	var file = root('config/nicks.json');
+	var file = root('./config/nicks.json');
 	var names = jf.readFileSync(file);
 	names[id]=nick;
 	jf.writeFileSync(file, names);
