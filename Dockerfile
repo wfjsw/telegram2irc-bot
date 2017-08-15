@@ -14,4 +14,4 @@ VOLUME ["/home/orzbot/.orzbot"]
 
 WORKDIR /home/orzbot/.orzbot
 
-CMD ["./main"]
+CMD ["sh", "-c", "main.js"]
