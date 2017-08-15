@@ -9,6 +9,7 @@ RUN mkdir config
 ADD package.json /home/orzbot/package.json
 ADD main.js /home/orzbot/main.js
 ADD pvimcn.js /home/orzbot/pvimcn.js
+ADD nickmap.js /home/orzbot/nickmap.js
 RUN yarn install
 
 RUN useradd -ms /bin/bash orzbot

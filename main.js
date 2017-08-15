@@ -13,7 +13,7 @@ var IRC = require('irc');
 var config = require('./config/config.js');
 var pvimcn = require("./pvimcn.js");
 var encoding = require("encoding");
-var nickmap = require("./config/nickmap.js");
+var nickmap = require("./nickmap.js");
 
 var tg = new Telegram(config.tg_bot_api_key, { polling: true });
 var irc_c = new IRC.Client(config.irc_server, config.irc_nick, {

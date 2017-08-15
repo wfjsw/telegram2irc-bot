@@ -4,9 +4,9 @@ var jf = require('jsonfile');
 var names = {};
 
 function setNick(id, nick){
-	var names = jf.readFileSync("nicks.json");
+	var names = jf.readFileSync("config/nicks.json");
 	names[id]=nick;
-	jf.writeFileSync("nicks.json", names);
+	jf.writeFileSync("config/nicks.json", names);
 	reload();
 }
 
