@@ -13,7 +13,7 @@ RUN yarn install
 RUN useradd -ms /bin/bash orzbot
 USER orzbot
 
-RUN mkdir -p /home/orzbot/config
+RUN mkdir -p config
 VOLUME ["/home/orzbot/config"]
 
 CMD ["sh", "-c", "/home/orzbot/main.js"]
