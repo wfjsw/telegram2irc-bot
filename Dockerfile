@@ -10,8 +10,7 @@ RUN useradd -ms /bin/bash orzbot
 USER orzbot
 
 RUN mkdir -p /home/orzbot/.orzbot
+
 VOLUME ["/home/orzbot/.orzbot"]
 
-WORKDIR /home/orzbot/.orzbot
-
-CMD ["sh", "-c", "main.js"]
+CMD ["sh", "-c", "/home/orzbot/.orzbot/main.js"]
