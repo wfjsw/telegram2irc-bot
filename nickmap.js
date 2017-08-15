@@ -2,14 +2,15 @@
 
 var jf = require('jsonfile');
 var path = require('path');
-var names = {};
 
 function root(f) {
 	return path.join(__dirname, '.', f || '');
 }
 
+var names = {};
+var file = root('./config/nicks.json');
+
 function setNick(id, nick){
-	var file = root('./config/nicks.json');
 	var names = jf.readFileSync(file);
 	names[id]=nick;
 	jf.writeFileSync(file, names);
@@ -30,11 +31,11 @@ function tests(){
 
 function initJson(){
 	var names = {};
-	jf.writeFileSync("nicks.json", names);
+	jf.writeFileSync(file, names);
 }
 
 function reload(){
-	names = jf.readFileSync("nicks.json");
+	names = jf.readFileSync(file);
 }
 
 reload();

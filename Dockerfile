@@ -12,7 +12,7 @@ ADD package.json /home/orzbot/package.json
 ADD main.js /home/orzbot/main.js
 ADD pvimcn.js /home/orzbot/pvimcn.js
 ADD nickmap.js /home/orzbot/nickmap.js
-RUN npm install && npm cache clean
+RUN yarn install
 
 USER orzbot
 VOLUME ["/home/orzbot/config"]
