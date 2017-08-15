@@ -61,9 +61,9 @@ docker run --name=orzbotd -d -v <ABSOLUTE_PATH_TO_THE_CONFIGURATION_FOLDER>:/hom
 ```
 
 ```
-docker logs orzbotd     # check log
-docker logs orzbotd     # stop bot
-docker logs orzbotd     # start bot
+docker logs orzbotd      # check log
+docker stop orzbotd      # stop bot
+docker start orzbotd     # start bot
 ```
 
 That's all. Have fun.
