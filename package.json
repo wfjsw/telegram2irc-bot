@@ -11,7 +11,6 @@
     "irc": "^0.3.12",
     "node-telegram-bot-api": "^0.19.2",
     "request": "^2.61.0",
-    "encoding": "^0.1.11",
     "jsonfile": "^2.2.3"
   },
   "private": true
