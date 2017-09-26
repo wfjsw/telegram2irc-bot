@@ -10,7 +10,7 @@ var version = "`PROJECT AKARIN VERSION 20160307`";
 
 var Telegram = require('node-telegram-bot-api');
 var IRC = require('irc');
-var config = require('./config.js');
+var config = require('./config/config.js');
 var pvimcn = require("./pvimcn.js");
 var encoding = require("encoding");
 var nickmap = require("./nickmap.js");
