@@ -129,7 +129,11 @@ function format_name(id, first_name, last_name) {
 }
 
 function estimateLength(text){
-    return encodeURIComponent(text).match(/%[a-f0-9]{2}/gi).length;
+    var match = encodeURIComponent(text).match(/%[a-f0-9]{2}/gi);
+    if(match)
+           return match.length;
+    else
+           return text.length;
 }
 
 function check_ascii_nickname(nickname) {
