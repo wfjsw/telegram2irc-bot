@@ -122,6 +122,9 @@ function format_name(id, first_name, last_name) {
     return full_name_1;
 }
 
+function estimateLength(text){
+    return encodeURIComponent(text).match(/%[a-f0-9]{2}/gi).length;
+}
 
 function format_newline(text, user, target, type) {
     text = text.replace(/(\s*\n\s*)+/g, '\n');
@@ -133,7 +136,7 @@ function format_newline(text, user, target, type) {
     var arr = text.split('\n');
     if (arr.length > config.irc_line_count_limit ||
         arr.some(function (line){
-                return line.length > config.irc_message_length_limit;
+                return estimateLength(line) > config.irc_message_length_limit;
         })){
 
         if(config.irc_long_message_paste_enabled){
@@ -146,12 +149,12 @@ function format_newline(text, user, target, type) {
                                       text.replace(/\n/g, '\\n')));
                 else
                     irc_c.say(config.irc_channel,
-                               printf('Long Msg [%1] %2', user, result));
+                               printf('[%1] (Long Msg) %2', user, result));
             });
             return null;
         }else{
             arr.map(function (line){
-                return line.slice(0, config.irc_message_length_limit);
+                return line.slice(0, config.irc_message_length_limit/3);
             });
             if(arr.length > config.irc_line_count_limit){
                 arr = arr.slice(0, config.irc_line_count_limit);
@@ -252,20 +255,30 @@ function sendimg(fileid, msg, type){
     tg.sendChatAction(msg.chat.id, 'upload_photo');
     tg.getFileLink(fileid).then(function (ret){
         var url = ret;
-        pvimcn.imgvim(url, function(err,ret){
-            console.log(ret);
-	    var trimmed = ret.trim();
-	    if (trimmed.endsWith("webp")){
-		    trimmed = trimmed.slice(0, trimmed.length - "webp".length);
-		    trimmed += "png";
-	    }
-            var user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name);
-            if (msg.caption){
-                irc_c.say(config.irc_channel, printf("[%1] %2: %3 Saying: %4", user, type, trimmed, msg.caption));
-            }else{
-                irc_c.say(config.irc_channel, printf("[%1] %2: %3", user, type, trimmed));
-            }
-        });
+	var trimmed = ret.trim();
+	if (trimmed.endsWith("webp")){
+            pvimcn.imgwebp(url, function(err,ret){
+                console.log(ret);
+		if(err){return;} // do nothing on http error
+                var user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name);
+                if (msg.caption){
+                    irc_c.say(config.irc_channel, printf("[%1] %2: %3 Saying: %4", user, type, ret.trim(), msg.caption));
+                }else{
+                    irc_c.say(config.irc_channel, printf("[%1] %2: %3 (-lisa)", user, type, ret.trim()));
+                }
+            });
+	}else{
+            pvimcn.imgvim(url, function(err,ret){
+                console.log(ret);
+		if(err){return;} // do nothing on http error
+                var user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name);
+                if (msg.caption){
+                    irc_c.say(config.irc_channel, printf("[%1] %2: %3 Saying: %4", user, type, ret.trim(), msg.caption));
+                }else{
+                    irc_c.say(config.irc_channel, printf("[%1] %2: %3", user, type, ret.trim()));
+                }
+            });
+	}
     });
 }
 
