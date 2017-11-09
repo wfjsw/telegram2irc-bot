@@ -8,9 +8,11 @@ var version = "`PROJECT AKARIN VERSION 20171109`";
 'use strict';
 
 
+var configname = process.argv[2];
+
 var Telegram = require('node-telegram-bot-api');
 var IRC = require('irc');
-var config = require('./config/config.js');
+var config = require('./config/'+configname+'.js');
 var pvimcn = require("./pvimcn.js");
 var encoding = require("encoding");
 var nickmap = require("./nickmap.js");

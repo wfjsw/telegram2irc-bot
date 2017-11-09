@@ -1,5 +1,7 @@
 'use strict';
 
+var configpath = process.argv[2];
+
 var jf = require('jsonfile');
 var path = require('path');
 
@@ -8,7 +10,7 @@ function root(f) {
 }
 
 var names = {};
-var file = root('./config/nicks.json');
+var file = root('./config/' + configpath + '-nicks.json');
 
 function setNick(id, nick){
 	var names = jf.readFileSync(file);
