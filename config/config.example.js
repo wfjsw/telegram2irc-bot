@@ -3,6 +3,8 @@
 // Telegram-Bot Config
 exports.tg_bot_api_key = '';
 exports.tg_group_id = 0;
+// Target Telegram group invite link.
+exports.tg_invite_link = '';
 /** filter function (string) -> (string) */
 exports.tg_msg_filter = function (s) { return s.replace('wfjsw','wfj.js'); }
 
@@ -25,9 +27,14 @@ exports.irc_password = '';
 exports.irc_line_count_limit = 5;
 exports.irc_message_length_limit = 400;
 exports.irc_long_message_paste_enabled = false;
-
+// Send message to IRC when Telegram user join or left.
+exports.irc_participant_enabled = true;
 // Image Forwarding
 exports.irc_photo_forwarding_enabled = false;
+// Sticker Forwarding
+exports.irc_sticker_forwarding_enabled = true;
+// Ensure ASCII name for forwarding to irc.
+exports.irc_ensure_ascii_nickname = false;
 
 // Blocking Config
 /** Hide prefixes of these names automatically */
@@ -37,3 +44,5 @@ exports.blocki2t = [];
 /** Block specific users from Telegram to IRC, use UserID here. 
  *  Acquire ID by forwarding a user's message to @userinfobot. */
 exports.blockt2i = []; 
+
+exports.use_kaomoji = true;
