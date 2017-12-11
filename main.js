@@ -17,11 +17,19 @@ var pvimcn = require("./pvimcn.js");
 var encoding = require("encoding");
 var nickmap = require("./nickmap.js");
 
+
+const Promise = require('bluebird');
+Promise.config({
+  cancellation: false
+});
+
 var tg = new Telegram(config.tg_bot_api_key, {
     polling: true
 });
 var irc_c = new IRC.Client(config.irc_server, config.irc_nick, {
     channels: [config.irc_channel],
+    debug: true,
+    showErrors: true,
     sasl: config.irc_sasl,
     secure: config.irc_ssl,
     selfSigned: config.irc_ssl_self_signed,
@@ -318,6 +326,12 @@ tg.on('message', function (msg) {
     // enforce group chat
     if (msg.chat.id != config.tg_group_id) return;
 
+    // Message Filter
+    if (!msg.text || msg.chat.id != config.tg_group_id || !enabled || msg.date < inittime){
+	    console.log("ignoring mesage time filter"+ msg.text);
+        return;
+    }
+
     if (config.irc_photo_forwarding_enabled && msg.photo && enabled) {
         var largest = {
             file_size: 0
@@ -535,9 +549,6 @@ tg.on('message', function (msg) {
     }
     var user, reply_to, text, forward_from, message_text;
 
-    // Message Filter
-    if (!msg.text || msg.chat.id != config.tg_group_id || !enabled || msg.date < inittime)
-        return;
 
     // Blocking Enforcer
     if (blockt2i.indexOf(msg.from.id) > -1 || msg.text.slice(0, 3) == '@@@')

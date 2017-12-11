@@ -8,10 +8,11 @@
   },
   "dependencies": {
     "encoding": "^0.1.11",
-    "irc": "^0.3.12",
+    "irc": "^0.3.11",
     "jsonfile": "^4.0.0",
     "node-telegram-bot-api": "^0.29.0",
     "request": "^2.61.0"
+    "bluebird": "^3.5.1"
   },
   "private": true
 }

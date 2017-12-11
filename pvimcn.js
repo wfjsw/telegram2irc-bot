@@ -66,7 +66,7 @@ function imgwebp(url, cb){
                 cb(true, body);
                 return;
             }
-            cb(false, body.trim());
+            cb(false, body.trim() + ".png");
             return;
         });
     });
