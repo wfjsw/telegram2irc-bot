@@ -1,99 +1,98 @@
-'use strict';
+const request = require('request')
+const rp = require('request-promise-native')
+const stream = require('stream')
+const fs = require('fs')
+const cp = require('child_process')
 
-var request = require('request');
-var stream = require('stream');
-var fs = require('fs');
-var cp = require("child_process");
-
-function pvim(message, cb){
-    if(message.length <= 'print(#Hello, world!#)'){
-      cb(true, message);
-      return;
+async function pvim(message) {
+    if (message.length <= 'print(#Hello, world!#)') {
+        return message
     }
-    request.post('https://fars.ee/?u=1',
-       {form: {c: message}},
-        function optionalCallback(err, httpResponse, body) {
-          if (err || httpResponse.statusCode != 200) {
-            console.error('Post txt to fars.ee failed', err);
-            cb(true, message);
-            return;
-          }
-          cb(false, body);
-          return;
-        });
+    try {
+        let body = await rp.post('https://fars.ee/?u=1',
+            { form: { c: message } })
+        return body
+    } catch (e) {
+        console.error('Post txt to fars.ee failed', e.message)
+        return message
+    }
 }
 
-function imgvim(url, cb){
-    var ext=url.match(/.*(\..*)$/)[1];
-    var data =request.get(url)
-      .on('response', function(response) {
-        console.log(response.statusCode) // 200
-        console.log(response.headers['content-type']) // 'image/png'
-      });
-
-    request.post({url:'https://fars.ee/?u=1', formData: {c: data}},
-      function optionalCallback(err, httpResponse, body) {
-        if (err || httpResponse.statusCode != 200) {
-          console.error('Post img to fars.ee failed', err);
-          cb(true, body);
-          return;
-        }
-        cb(false, body.trim());
-        return;
-      });
-}
-
-function imgwebp(url, cb){
-    var convert = cp.spawn("convert", ["-define", "png:exclude-chunks=date,time", "webp:-", "png:-"], {shell: false});
-    request.get(url)
-    .on('response', (response) => {
-        console.log(url)
+async function imgvim(url) {
+    var ext = url.match(/.*(\..*)$/)[1]
+    var data = await rp.get(url, {
+        encoding: null
     })
-    .pipe(convert.stdin);
-
-    var buffers=[];
-    convert.stdout.on('data', (data) =>{
-        buffers.push(data);
-    });
-
-    convert.on("close", () => {
-        request.post({url:'https://fars.ee/?u=1', formData: {
-            c: {value: Buffer.concat(buffers),
-                options: {filename: "c.png", contentType: "image/png"}}}
-        }, (err, httpResponse, body) => {
-            if (err || httpResponse.statusCode != 200) {
-                console.error('Post webp to fars.ee failed', err);
-                cb(true, body);
-                return;
-            }
-            cb(false, body.trim() + ".png");
-            return;
-        });
-    });
+    try {
+        let body = await rp.post({ url: 'https://fars.ee/?u=1', formData: { c: data } })
+        return body.trim() + ext
+    } catch (e) {
+        console.error('Post img to fars.ee failed', e.message)
+        throw e
+    }
 }
 
-function test(){
-    pvim('testing\nabc\nadd\nethis is a log message', function cb(err,url) {console.log(url);});
+async function imgwebp(url, cb) {
+    return new Promise((rs, rj) => {
+        var convert = cp.spawn('convert', ['-define', 'png:exclude-chunks=date,time', 'webp:-', 'png:-'], { shell: false })
+        request.get(url)
+            .on('response', (response) => {
+                console.log(url)
+            })
+            .pipe(convert.stdin)
+
+        var buffers = []
+        convert.stdout.on('data', (data) => {
+            buffers.push(data)
+        })
+
+        convert.on('close', () => {
+            request.post({
+                url: 'https://fars.ee/?u=1', formData: {
+                    c: {
+                        value: Buffer.concat(buffers),
+                        options: { filename: 'c.png', contentType: 'image/png' }
+                    }
+                }
+            }, (err, httpResponse, body) => {
+                if (err || httpResponse.statusCode != 200) {
+                    console.error('Post webp to fars.ee failed', err)
+                    rj(body)
+                    return
+                }
+                rs(body.trim())
+                return
+            })
+        })
+    })
+}
+
+async function test() {
+    let url = await pvim('testing\nabc\nadd\nethis is a log message')
+    console.log(url)
 }
 
 
-function testImg(){
-  imgvim('https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png',
-    function cb(err,url) {console.log(url);});
+async function testImg() {
+    let url = await imgvim('https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png')
+    console.log(url)
 }
 
-function testWebp(){
-  imgwebp('http://www.gstatic.com/webp/gallery/1.webp',
-    function cb(err,url) {console.log(url);});
+async function testWebp() {
+    let url = await imgwebp('http://www.gstatic.com/webp/gallery/1.webp')
+    console.log(url)
 }
 
 
-exports.pvim = pvim;
+exports.pvim = pvim
 
-exports.imgvim =imgvim;
-exports.imgwebp =imgwebp;
+exports.imgvim = imgvim
+exports.imgwebp = imgwebp
 
-//testWebp();
-//test();
-//testImg();
-
+if (require.main === module) {
+    (async () => {
+        await test()
+        await testImg()
+        await testWebp()
+    })()
+}

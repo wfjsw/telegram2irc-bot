@@ -1,49 +1,49 @@
-'use strict';
+'use strict'
 
-var configpath = process.argv[2];
+var configpath = process.argv[2]
 
-var jf = require('jsonfile');
-var path = require('path');
+var jf = require('jsonfile')
+var path = require('path')
 
 function root(f) {
-	return path.join(__dirname, '.', f || '');
+    return path.join(__dirname, '.', f || '')
 }
 
-var names = {};
-var file = root('./config/' + configpath + '-nicks.json');
+var names = {}
+var file = root('./config/' + configpath + '-nicks.json')
 
-function setNick(id, nick){
-	var names = jf.readFileSync(file);
-	names[id]=nick;
-	jf.writeFileSync(file, names);
-	reload();
+function setNick(id, nick) {
+    var names = jf.readFileSync(file)
+    names[id] = nick
+    jf.writeFileSync(file, names)
+    reload()
 }
 
-function getNick(id){
-	if(id in names){
-		return names[id];
+function getNick(id) {
+    if (id in names) {
+        return names[id]
     } else {
-        return false;
+        return false
     }
 }
 
-function tests(){
-	setNick("farseerfc", "fc");
+function tests() {
+    setNick('farseerfc', 'fc')
 }
 
-function initJson(){
-	var names = {};
-	jf.writeFileSync(file, names);
+function initJson() {
+    var names = {}
+    jf.writeFileSync(file, names)
 }
 
-function reload(){
-	names = jf.readFileSync(file);
+function reload() {
+    names = jf.readFileSync(file)
 }
 
-reload();
+reload()
 
 // initJson();
 // tests();
 
-exports.setNick = setNick;
-exports.getNick = getNick;
+exports.setNick = setNick
+exports.getNick = getNick
