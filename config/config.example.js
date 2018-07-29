@@ -2,20 +2,22 @@
 
 // Forwarder Settings
 exports.t2i = new Map([
-    0, ''
+    [0, '']
 ])
 
 exports.i2t = new Map([
-    '', 0
+    ['', 0]
 ])
 
 // Telegram-Bot Config
+exports.api_id = 0
+exports.api_hash = ''
 exports.tg_bot_api_key = ''
 // exports.tg_group_id = 0;
 // Target Telegram group invite link.
 // exports.tg_invite_link = '';
 exports.tg_invite_link = new Map([
-    0, ''
+    [0, '']
 ])
 
 

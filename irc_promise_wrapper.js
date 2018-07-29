@@ -1,4 +1,4 @@
-let irc = require('irc')
+let irc = require('irc-upd')
 
 irc.ClientPromise = class extends irc.Client {
     constructor(server, nick, options = {}) {
@@ -6,9 +6,10 @@ irc.ClientPromise = class extends irc.Client {
     }
 
     join(channel) { 
+        let j = super.join.bind(this)
         return new Promise(function (rs, rj) {
             try {
-                super(channel, rs)
+                j(channel, rs)
             } catch (e) {
                 rj(e)
             }
@@ -16,12 +17,13 @@ irc.ClientPromise = class extends irc.Client {
     }
 
     part(channel, message) {
+        let p = super.part.bind(this)
         return new Promise(function (rs, rj) {
             try {
                 if (message) {
-                    super(channel, message, rs)
+                    p(channel, message, rs)
                 } else {
-                    super(channel, rs)
+                    p(channel, rs)
                 }
             } catch (e) {
                 rj(e)
@@ -30,9 +32,10 @@ irc.ClientPromise = class extends irc.Client {
     }
 
     connect(retryCount) {
+        let c = super.connect.bind(this)
         return new Promise(function (rs, rj) {
             try {
-                super(retryCount, rs)
+                c(retryCount, rs)
             } catch (e) {
                 rj(e)
             }
@@ -40,12 +43,13 @@ irc.ClientPromise = class extends irc.Client {
     }
 
     disconnect(message) {
+        let d = super.disconnect.bind(this)
         return new Promise(function (rs, rj) {
             try {
                 if (message) {
-                    super(message, rs)
+                    d(message, rs)
                 } else {
-                    super(rs)
+                    d(rs)
                 }
             } catch (e) {
                 rj(e)
@@ -53,3 +57,5 @@ irc.ClientPromise = class extends irc.Client {
         })
     }
 }
+
+module.exports = irc

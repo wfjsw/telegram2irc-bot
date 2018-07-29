@@ -27,14 +27,6 @@ Commands are **cASe SeNsITivE** !
 /version - GET CURRENT WRITEDATE
 ```
 
-## Pro Tip
-
-To reduce memory usage, start the bot with
-
-```
-node --max-new-space-size=16384 --max-old-space-size=256 main
-```
-
 ## Docker Usage
 
 **Step 1: clone this repo to your machine**

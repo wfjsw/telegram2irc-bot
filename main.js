@@ -7,20 +7,27 @@ var version = '`PROJECT AKARIN VERSION 20171109`'
 
 var configname = process.argv[2]
 
+const BotClient = require('./bot_api/bot_api')
 const Telegram = require('node-telegram-bot-api')
 const IRC = require('./irc_promise_wrapper')
 const config = require('./config/' + configname + '.js')
 const pvimcn = require('./pvimcn.js')
 const he = require('he')
-const encoding = require('encoding')
 const nickmap = require('./nickmap.js')
 const util = require('util')
 
-var tg = new Telegram(config.tg_bot_api_key, {
-    polling: true
-})
-var irc_c = new IRC.Client(config.irc_server, config.irc_nick, {
-    channels: [config.irc_channel],
+var irc_channels = new Set() // Fill Realtime
+for (let [i, t] of config.i2t) {
+    irc_channels.add(i)
+}
+for (let [t, i] of config.t2i) {
+    irc_channels.add(i)
+}
+
+var tg = new BotClient(config.api_id, config.api_hash, config.tg_bot_api_key)
+var tg2 = new Telegram(config.tg_bot_api_key)
+var irc_c = new IRC.ClientPromise(config.irc_server, config.irc_nick, {
+    channels: [...irc_channels],
     debug: true,
     showErrors: true,
     sasl: config.irc_sasl,
@@ -38,7 +45,7 @@ var me
 var enabled = new Set() // Set of Telegram Group ID
 var blocki2t = config.blocki2t
 var blockt2i = config.blockt2i
-var irc_channels = new Set() // Fill Realtime
+
 
 var inittime = Math.round(Date.now() / 1000)
 
@@ -188,19 +195,11 @@ function format_newline(ic, text, user, target, type) {
 // Event to write config on exit.
 process.on('SIGINT', async (code) => {
     console.log('About to exit with code:', code)
-    tg.sendMessage(config.tg_group_id, '`COMMITING INTERRUPT`', {
-        parse_mode: 'Markdown'
-    })
-    irc_c.part(config.irc_channel)
-    process.exit()
+    return takeDown()
 })
 process.on('SIGTERM', function (code) {
     console.log('About to exit with code:', code)
-    tg.sendMessage(config.tg_group_id, '`COMMITING TERMINATE`', {
-        parse_mode: 'Markdown'
-    })
-    irc_c.part(config.irc_channel)
-    process.exit()
+    return takeDown()
 })
 // End Exit Event.
 
@@ -210,13 +209,13 @@ for (let [ic, tc] of config.i2t) {
         console.log(util.format('From IRC %s  --  %s', from, message))
 
         // Blocking Enforcer
-        if (blocki2t.indexOf(from) > -1 || !enabled.has(tc)) {
+        if (blocki2t.has(from) || !enabled.has(tc)) {
             console.log('blocked')
             return
         }
 
         if (message.match(/\s*\\reset\w*/)) {
-            resetTg() // Hmm
+            return takeDown() // Hmm
         }
 
         if (message.match(/\s*\\invite/)) {
@@ -252,7 +251,7 @@ irc_c.addListener('action', function (from, to, text) {
     console.log(util.format('From IRC Action %s  --  %s', from, text))
 
     // Blocking Enforcer
-    if (blocki2t.has(from) > -1 || !enabled)
+    if (blocki2t.has(from) > -1 || !enabled.has(config.i2t.get(to)))
         return
 
     if (config.i2t.has(to)) {
@@ -277,38 +276,40 @@ irc_c.addListener('topic', function (chan, newtopic, nick, message) {
     }
 })
 
-/*
-function sendimg(tc, fileid, msg, type) {
-    tg.sendChatAction(msg.chat.id, 'upload_photo')
-    tg.getFileLink(fileid).then(function (ret) {
-        var url = ret
-        var trimmed = ret.trim()
-        if (trimmed.endsWith('webp')) {
-            pvimcn.imgwebp(url, function (err, ret) {
-                console.log(ret)
-                if (err) { return } // do nothing on http error
-                var user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name)
-                if (msg.caption) {
-                    irc_c.say(config.irc_channel, printf('[%1] %2: %3 Saying: %4', user, type, ret.trim(), msg.caption))
-                } else {
-                    irc_c.say(config.irc_channel, printf('[%1] %2: %3 (-lisa)', user, type, ret.trim()))
-                }
-            })
-        } else {
-            pvimcn.imgvim(url, function (err, ret) {
-                console.log(ret)
-                if (err) { return } // do nothing on http error
-                var user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name)
-                if (msg.caption) {
-                    irc_c.say(config.irc_channel, printf('[%1] %2: %3 Saying: %4', user, type, ret.trim(), msg.caption))
-                } else {
-                    irc_c.say(config.irc_channel, printf('[%1] %2: %3', user, type, ret.trim()))
-                }
-            })
+
+async function sendimg(ic, fileid, msg, type) {
+    await tg.sendChatAction(msg.chat.id, 'upload_photo')
+    let url = await tg2.getFileLink(fileid)
+    var trimmed = url.trim()
+    let user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name)
+    if (trimmed.endsWith('webp')) {
+        try {
+            let ret = await pvimcn.imgwebp(url)
+            console.log(ret)
+            if (msg.caption) {
+                irc_c.say(ic, util.format('[%s] %s: %s Saying: %s', user, type, ret.trim(), msg.caption))
+            } else {
+                irc_c.say(ic, util.format('[%s] %s: %s (-lisa)', user, type, ret.trim()))
+            }
+        } catch (e) {
+            console.error(e.message)
+            return 
         }
-    })
+    } else {
+        try {
+            let ret = await pvimcn.imgvim(url)
+            console.log(ret)
+            if (msg.caption) {
+                irc_c.say(ic, util.format('[%s] %s: %s Saying: %s', user, type, ret.trim(), msg.caption))
+            } else {
+                irc_c.say(ic, util.format('[%s] %s: %s', user, type, ret.trim()))
+            }
+        } catch (e) {
+            console.error(e.message)
+            return 
+        }
+    }
 }
-*/
 
 tg.on('message', async (msg) => {
     // Process Commands.
@@ -321,7 +322,7 @@ tg.on('message', async (msg) => {
     let ic = config.t2i.get(msg.chat.id)
 
     // Message Filter
-    if (!enabled || msg.date < inittime) {
+    if (!enabled.has(msg.chat.id) || msg.date < inittime) {
         console.log('ignoring mesage time filter' + msg.text)
         return
     }
@@ -337,17 +338,17 @@ tg.on('message', async (msg) => {
                 largest = p
             }
         }
-        //sendimg(largest.file_id, msg, 'Img')
+        sendimg(ic, largest.file_id, msg, 'Img')
     } else if (config.irc_sticker_forwarding_enabled && msg.sticker) {
         // Stickers
-        //sendimg(msg.sticker.file_id, msg, 'Sticker')
+        sendimg(ic, msg.sticker.file_id, msg, 'Sticker')
     } else if (config.irc_photo_forwarding_enabled && msg.voice) {
         // VoiceNote
-        //sendimg(msg.voice.file_id, msg, 'Voice')
+        sendimg(ic, msg.voice.file_id, msg, 'Voice')
     } else if (config.irc_photo_forwarding_enabled && msg.document) {
         // Document
-        //sendimg(msg.document.file_id, msg,
-        //    printf('File(%1)', msg.document.mime_type))
+        sendimg(ic, msg.document.file_id, msg,
+            util.format('File(%s)', msg.document.mime_type))
     } else if (msg.new_chat_participant) {
         // New Chat Participant from Telegram
 
@@ -573,7 +574,7 @@ tg.on('message', async (msg) => {
             name: reply_to,
             byname: user
         })
-        message_text = format_newline(msg.text, user, reply_to, 'reply')
+        message_text = format_newline(ic, msg.text, user, reply_to, 'reply')
         if (message_text === null) return
         message_text = util.format('[%s] %s: %s', user, reply_to, message_text)
     } else if (msg.forward_from) {
@@ -581,12 +582,12 @@ tg.on('message', async (msg) => {
             forward_from = msg.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1]
         else
             forward_from = format_name(msg.forward_from.id, msg.forward_from.first_name, msg.forward_from.last_name)
-        message_text = format_newline(msg.text, user, forward_from,
+        message_text = format_newline(ic, msg.text, user, forward_from,
             'forward', true)
         if (message_text === null) return
         message_text = util.format('[%s] Fwd %s: %s', user, forward_from, message_text)
     } else {
-        message_text = format_newline(msg.text, user)
+        message_text = format_newline(ic, msg.text, user)
         if (message_text === null) return
         message_text = util.format('[%s] %s', user, message_text)
     }
@@ -642,18 +643,28 @@ irc_c.addListener('error', function (e) {
     console.log('error: ', e.message)
 })
 
-async function resetTg() {
-    await tg.sendMessage(config.tg_group_id, '`REQUESTED RESET BY USER`', {
-        parse_mode: 'Markdown'
-    })
-    irc_c.part(config.irc_channel)
-    process.exit()
+async function takeDown() {
+    try {
+        for (let i of irc_channels) {
+            await irc_c.part(i)
+        }
+        await irc_c.disconnect()
+        process.exit()
+    } catch (e) {
+        console.error(e.message)
+        process.exit()
+    }
 }
 
 tg.once('ready', async () => {
     me = await tg.getMe()
     console.log('PROJECT AKARIN INITATED')
-    irc_c.join(config.irc_channel)
+    //for (let i of irc_channels) {
+    //    await irc_c.join(i)
+    //}
+    for (let [t, i] of config.t2i) {
+        enabled.add(t)
+    }
 })
 
 
