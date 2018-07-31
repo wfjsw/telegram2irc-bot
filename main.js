@@ -3,7 +3,7 @@
 // Total hours wasted here -> 12
 // ^ Do Not Remove This!
 
-var version = '`PROJECT AKARIN VERSION 20171109`'
+var version = '`PROJECT AKARIN VERSION 20180730`'
 
 var configname = process.argv[2]
 
