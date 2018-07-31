@@ -466,7 +466,7 @@ tg.on('message', async (msg) => {
             })
             return
         } */else if (command[0] == '/ircsay') {
-            var txtn
+            let txtn
             command.shift()
             txtn = command.join(' ')
             irc_c.say(ic, txtn)
@@ -543,6 +543,12 @@ tg.on('message', async (msg) => {
             me_message = true
             msg.text = msg.text.substring(command[0].length)
             // passthrough to allow /me action
+        } else if (Object.keys(config.custom_command).includes(command[0])) {
+            let txtn
+            command[0] = config.custom_command[command[0]]
+            txtn = command.join(' ')
+            irc_c.say(ic, txtn)
+            // fall through
         } else {
             return
         }

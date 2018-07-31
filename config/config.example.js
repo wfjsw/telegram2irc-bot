@@ -61,3 +61,7 @@ exports.blocki2t = new Set([])
 exports.blockt2i = new Set([]) 
 
 exports.use_kaomoji = true
+
+exports.custom_command = {
+    '/list': '!!list'
+}
