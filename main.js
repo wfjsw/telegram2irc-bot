@@ -304,7 +304,7 @@ async function sendimg(ic, fileid, msg, type) {
     }
 }
 
-tg.on('message', async (msg) => {
+async function on_message (msg) {
     // Process Commands.
     var me_message = false
     console.log(util.format('From ID %s  --  %s', msg.chat.id, msg.text))
@@ -600,7 +600,10 @@ tg.on('message', async (msg) => {
         irc_c.say(ic, message_text)
     }
     //End of the sub process.
-})
+}
+
+tg.on('message', on_message);
+tg.on('edited_message', on_message);
 
 // Indexed by IRC channel name
 // var nicks = new Map()
