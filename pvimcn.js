@@ -19,13 +19,34 @@ async function pvim(message) {
 }
 
 async function imgvim(url) {
-    var ext = url.match(/.*(\..*)$/)[1]
-    var data = await rp.get(url, {
-        encoding: null
-    })
+    var ext = null
     try {
-        let body = await rp.post({ url: 'https://fars.ee/?u=1', formData: { c: data } })
-        return body.trim() + ext
+      ext = url.match(/.*(\.[^\/]*)$/)[1].substring(1)
+    }catch(e){
+      ext = null
+    }
+
+    var data = await rp.get({
+      url: url,
+      encoding: null
+    })
+    console.log('Debug: posting image '+url)
+    try {
+        var buffers = []
+        buffers.push(data)
+        let body = await rp.post({
+          url: 'https://fars.ee/?u=1', formData: {
+            c: {
+              value: Buffer.concat(buffers),
+              options: {filename: ext ? 'c.'+ext : 'c', contentType: 'image/'+ext}
+            }
+          }
+        })
+        var ret = body.trim()
+        if(ext != null && !ret.endsWith(ext)){
+          ret = ret+"."+ext
+        }
+        return ret
     } catch (e) {
         console.error('Post img to fars.ee failed', e.message)
         throw e

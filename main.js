@@ -3,7 +3,7 @@
 // Total hours wasted here -> 12
 // ^ Do Not Remove This!
 
-var version = '`PROJECT AKARIN VERSION 20180730`'
+var version = '`PROJECT AKARIN VERSION 20180803`'
 
 var configname = process.argv[2]
 
@@ -150,7 +150,8 @@ function check_ascii_nickname(nickname) {
     return !/[^\x30-\x7F]/g.test(nickname)
 }
 
-function format_newline(ic, text, user, target, type) {
+async function format_newline(ic, text, user, target, type) {
+    var pretext = text
     text = text.replace(/(\s*\n\s*)+/g, '\n')
     if (type == 'reply')
         text = text.replace(/\n/g, util.format('\n[%s] %s: ', user, target))
@@ -165,17 +166,9 @@ function format_newline(ic, text, user, target, type) {
 
         if (config.irc_long_message_paste_enabled) {
             console.log(util.format('User [%s] send a long message', user))
-            pvimcn.pvim(text, function cb(err, result) {
-                console.log('pvim result: ' + result)
-                if (err)
-                    irc_c.say(ic,
-                        util.format('[%s] %s', user,
-                            text.replace(/\n/g, '\\n')))
-                else
-                    irc_c.say(ic,
-                        util.format('Long Msg [%s] %s', user, result))
-            })
-            return null
+            var result = await pvimcn.pvim(pretext)
+            console.log('pvim result: ' + result)
+            return util.format('Long Msg: %s', result)
         } else {
             arr.map(function (line) {
                 return line.slice(0, config.irc_message_length_limit / 3)
@@ -293,7 +286,7 @@ async function sendimg(ic, fileid, msg, type) {
             }
         } catch (e) {
             console.error(e.message)
-            return 
+            return
         }
     } else {
         try {
@@ -306,12 +299,12 @@ async function sendimg(ic, fileid, msg, type) {
             }
         } catch (e) {
             console.error(e.message)
-            return 
+            return
         }
     }
 }
 
-tg.on('message', async (msg) => {
+async function on_message (msg) {
     // Process Commands.
     var me_message = false
     console.log(util.format('From ID %s  --  %s', msg.chat.id, msg.text))
@@ -339,16 +332,20 @@ tg.on('message', async (msg) => {
             }
         }
         sendimg(ic, largest.file_id, msg, 'Img')
+        return
     } else if (config.irc_sticker_forwarding_enabled && msg.sticker) {
         // Stickers
         sendimg(ic, msg.sticker.file_id, msg, 'Sticker')
+        return
     } else if (config.irc_photo_forwarding_enabled && msg.voice) {
         // VoiceNote
         sendimg(ic, msg.voice.file_id, msg, 'Voice')
+        return
     } else if (config.irc_photo_forwarding_enabled && msg.document) {
         // Document
         sendimg(ic, msg.document.file_id, msg,
             util.format('File(%s)', msg.document.mime_type))
+        return
     } else if (msg.new_chat_participant) {
         // New Chat Participant from Telegram
 
@@ -458,7 +455,7 @@ tg.on('message', async (msg) => {
             }
         } /*else if (command[0] == '/reloadblocklist' || command[0] == '/reloadblocklist@' + tgusername) {
             // Load blocklist
-            // Kinda useless. These lists probably 
+            // Kinda useless. These lists probably
             blocki2t = config.blocki2t
             blockt2i = config.blockt2i
             tg.sendMessage(msg.chat.id, '`EXECUTE ORDER BLOCKLIST-RELOAD`', {
@@ -556,7 +553,7 @@ tg.on('message', async (msg) => {
     var user, reply_to, text, forward_from, message_text
 
     // Blocking Enforcer
-    if (blockt2i.has(msg.from.id) || msg.text.slice(0, 2) == '@@')
+    if (blockt2i.has(msg.from.id) || (msg.text && msg.text.slice(0, 2) == '@@'))
         return
 
     user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name)
@@ -580,7 +577,7 @@ tg.on('message', async (msg) => {
             name: reply_to,
             byname: user
         })
-        message_text = format_newline(ic, msg.text, user, reply_to, 'reply')
+        message_text = await format_newline(ic, msg.text, user, reply_to, 'reply')
         if (message_text === null) return
         message_text = util.format('[%s] %s: %s', user, reply_to, message_text)
     } else if (msg.forward_from) {
@@ -588,12 +585,12 @@ tg.on('message', async (msg) => {
             forward_from = msg.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1]
         else
             forward_from = format_name(msg.forward_from.id, msg.forward_from.first_name, msg.forward_from.last_name)
-        message_text = format_newline(ic, msg.text, user, forward_from,
+        message_text = await format_newline(ic, msg.text, user, forward_from,
             'forward', true)
         if (message_text === null) return
         message_text = util.format('[%s] Fwd %s: %s', user, forward_from, message_text)
     } else {
-        message_text = format_newline(ic, msg.text, user)
+        message_text = await format_newline(ic, msg.text, user)
         if (message_text === null) return
         message_text = util.format('[%s] %s', user, message_text)
     }
@@ -603,7 +600,10 @@ tg.on('message', async (msg) => {
         irc_c.say(ic, message_text)
     }
     //End of the sub process.
-})
+}
+
+tg.on('message', on_message);
+tg.on('edited_message', on_message);
 
 // Indexed by IRC channel name
 // var nicks = new Map()
