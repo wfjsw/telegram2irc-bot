@@ -10,6 +10,7 @@ var configname = process.argv[2]
 const BotClient = require('./bot_api/bot_api')
 const Telegram = require('node-telegram-bot-api')
 const IRC = require('./irc_promise_wrapper')
+const emoji = require('emoji')
 const config = require('./config/' + configname + '.js')
 const pvimcn = require('./pvimcn.js')
 const he = require('he')
@@ -228,7 +229,7 @@ for (let [ic, tc] of config.i2t) {
             message += '\n' + last_msg
             if (!config.cmd_echo) return
         }
-
+        if (config.replace_emoji) message = emoji.emojify(message)
         return tg.sendMessage(tc, message)
     })
 }
@@ -298,7 +299,7 @@ async function sendimg(ic, fileid, msg, type) {
     }
 }
 
-async function on_message (msg) {
+async function on_message(msg) {
     // Process Commands.
     var me_message = false
     console.log(util.format('From ID %s  --  %s', msg.chat.id, msg.text))
@@ -582,6 +583,7 @@ async function on_message (msg) {
         if (message_text === null) return
         message_text = util.format('[%s] %s', user, message_text)
     }
+    if (config.replace_emoji) message_text = emoji.unemojify(message_text)
     if (me_message) {
         irc_c.action(ic, message_text)
     } else {

@@ -11,12 +11,12 @@ var bots = [
 
 // Forwarder Settings
 exports.t2i = new Map()
-for (b of bots) {
+for (let b of bots) {
     exports.t2i.set(b.tg_group, b.irc_channel)
 }
 
 exports.i2t = new Map()
-for (b of bots) {
+for (let b of bots) {
     exports.i2t.set(b.irc_channel, b.tg_group)
 }
 
@@ -28,7 +28,7 @@ exports.tg_bot_api_key = ''
 // Target Telegram group invite link.
 // exports.tg_invite_link = '';
 exports.tg_invite_link = new Map()
-for (b of bots) {
+for (let b of bots) {
     exports.tg_invite_link.set(b.tg_group, b.tg_invite_link)
 }
 
@@ -71,7 +71,7 @@ exports.blocki2t = new Set([])
  *  Acquire ID by forwarding a user's message to @userinfobot. */
 exports.blockt2i = new Set([])
 
-exports.use_kaomoji = true
+exports.replace_emoji = true
 
 exports.custom_command = {
     '/list': '!!list'

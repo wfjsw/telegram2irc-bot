@@ -10,6 +10,7 @@
     "he": "^1.1.1",
     "irc-upd": "^0.10.0",
     "jsonfile": "^4.0.0",
+    "node-emoji": "^1.8.1",
     "node-telegram-bot-api": "^0.29.0",
     "request": "^2.87.0",
     "request-promise-native": "^1.0.5"
