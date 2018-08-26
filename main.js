@@ -3,7 +3,7 @@
 // Total hours wasted here -> 12
 // ^ Do Not Remove This!
 
-var version = '`PROJECT AKARIN VERSION 20180803`'
+var version = '`PROJECT AKARIN VERSION 20180826`'
 
 var configname = process.argv[2]
 
@@ -35,7 +35,7 @@ var irc_c = new IRC.ClientPromise(config.irc_server, config.irc_nick, {
     secure: config.irc_ssl,
     selfSigned: config.irc_ssl_self_signed,
     port: config.irc_port,
-    username: config.irc_username,
+    userName: config.irc_username,
     password: config.irc_password,
     floodProtection: true,
     floodProtectionDelay: 1000,
