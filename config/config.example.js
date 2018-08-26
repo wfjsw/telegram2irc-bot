@@ -1,13 +1,24 @@
 // Config File For Akarin
 
-// Forwarder Settings
-exports.t2i = new Map([
-    [0, '']
-])
+var bots = [
+  {
+    tg_group: 0,
+    irc_channel: '',
+    tg_invite_link: ''
+  },
+]
 
-exports.i2t = new Map([
-    ['', 0]
-])
+
+// Forwarder Settings
+exports.t2i = new Map()
+for (b of bots) {
+    exports.t2i.set(b.tg_group, b.irc_channel)
+}
+
+exports.i2t = new Map()
+for (b of bots) {
+    exports.i2t.set(b.irc_channel, b.tg_group)
+}
 
 // Telegram-Bot Config
 exports.api_id = 0
@@ -16,9 +27,10 @@ exports.tg_bot_api_key = ''
 // exports.tg_group_id = 0;
 // Target Telegram group invite link.
 // exports.tg_invite_link = '';
-exports.tg_invite_link = new Map([
-    [0, '']
-])
+exports.tg_invite_link = new Map()
+for (b of bots) {
+    exports.tg_invite_link.set(b.tg_group, b.tg_invite_link)
+}
 
 
 // IRC Config
@@ -55,9 +67,9 @@ exports.cmd_echo = false
 exports.other_bridge_bots = new Set([])
 /** Block specific users from IRC to Telegram, use nickname here. */
 exports.blocki2t = new Set([])
-/** Block specific users from Telegram to IRC, use UserID here. 
+/** Block specific users from Telegram to IRC, use UserID here.
  *  Acquire ID by forwarding a user's message to @userinfobot. */
-exports.blockt2i = new Set([]) 
+exports.blockt2i = new Set([])
 
 exports.use_kaomoji = true
 
