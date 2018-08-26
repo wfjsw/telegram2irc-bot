@@ -39,7 +39,9 @@ var irc_c = new IRC.ClientPromise(config.irc_server, config.irc_nick, {
     floodProtection: true,
     floodProtectionDelay: 1000,
     autoConnect: true,
-    autoRejoin: true
+    autoRejoin: true,
+    autoRenick: true,
+    stripColors: true
 })
 var me
 var enabled = new Set() // Set of Telegram Group ID
@@ -58,14 +60,6 @@ var lastContext = new Map()
 //    text: '',
 //    byname: ''
 //}
-
-function cutJJ() {
-    var nick_to_use = config.irc_nick
-    var current_nick = irc_c.nick
-    console.log('cutjj: ' + nick_to_use + ' , ' + current_nick)
-    if (current_nick != nick_to_use)
-        irc_c.send('nick', nick_to_use)
-}
 
 var UnicodeString = (function () {
     function surrogatePairToCodePoint(charCode1, charCode2) {
@@ -478,12 +472,6 @@ tg.on('message', async (msg) => {
             return tg.sendMessage(msg.chat.id, '`EXECUTE ORDER REJOIN`', {
                 parse_mode: 'Markdown'
             })
-        } else if (command[0] == '/cutjj') {
-            cutJJ()
-            var cutmsg = config.use_kaomoji ? '( *・ω・)✄╰ひ╯' : '`EXECUTE ORDER TAIL-TRIM`'
-            return tg.sendMessage(msg.chat.id, cutmsg, {
-                parse_mode: 'Markdown'
-            })
         } else if (command[0] == '/version') {
             return tg.sendMessage(msg.chat.id, version, {
                 parse_mode: 'Markdown'
@@ -672,7 +660,3 @@ tg.once('ready', async () => {
         enabled.add(t)
     }
 })
-
-
-var cutinv = config.cutjj_interval ? config.cutjj_interval : 5 * 60 * 1000
-var interval_cut = setInterval(cutJJ, cutinv)
