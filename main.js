@@ -480,6 +480,11 @@ async function on_message(msg) {
             return tg.sendMessage(msg.chat.id, uptimestr, {
                 parse_mode: 'Markdown'
             })
+        } else if (command[0] == '/reset') {
+            await tg.sendMessage(msg.chat.id, '`TAKING DOWN...`', {
+                parse_mode: 'Markdown'
+            })
+            return takeDown()
         } else if (command[0] == '/syn') {
             return tg.sendMessage(msg.chat.id, '`ACK`', {
                 parse_mode: 'Markdown'
