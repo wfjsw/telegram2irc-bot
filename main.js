@@ -383,14 +383,14 @@ async function on_message(msg) {
         var command = msg.text.split(' ')
         command[0] = command[0].replace(`@${me.username}`, '')
         if (command[0] == '/hold') {
-            irc_c.part(config.irc_channel) // ?
+            irc_c.part(ic)
             enabled.delete(msg.chat.id)
             return tg.sendMessage(msg.chat.id, '`EXECUTE ORDER STOP-FORWARD`', {
                 parse_mode: 'Markdown'
             })
         } else if (command[0] == '/unhold') {
             enabled.add(msg.chat.id)
-            irc_c.join(config.irc_channel) // ?
+            irc_c.join(ic)
             return tg.sendMessage(msg.chat.id, '`EXECUTE ORDER START-FORWARD`', {
                 parse_mode: 'Markdown'
             })
@@ -465,8 +465,8 @@ async function on_message(msg) {
             // fall through
         } else if (command[0] == '/ircrejoin') {
             // To Async/Await
-            irc_c.part(ic)
-            irc_c.join(ic)
+            await irc_c.part(ic)
+            await irc_c.join(ic)
             return tg.sendMessage(msg.chat.id, '`EXECUTE ORDER REJOIN`', {
                 parse_mode: 'Markdown'
             })
