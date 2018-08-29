@@ -3,7 +3,7 @@
 // Total hours wasted here -> 12
 // ^ Do Not Remove This!
 
-var version = '`PROJECT AKARIN VERSION 20180826`'
+var version = '`PROJECT AKARIN VERSION 20180829`'
 
 var configname = process.argv[2]
 
@@ -239,14 +239,14 @@ irc_c.addListener('action', function (from, to, text) {
     console.log(util.format('From IRC Action %s  --  %s', from, text))
 
     // Blocking Enforcer
-    if (blocki2t.has(from) > -1 || !enabled.has(config.i2t.get(to)))
+    if (blocki2t.has(from) || !enabled.has(config.i2t.get(to)))
         return
 
     if (config.i2t.has(to)) {
         if (!config.other_bridge_bots.has(from))
-            text = util.format('** %1 %2 **', from, text)
+            text = util.format('** %s %s **', from, text)
         else
-            text = util.format('** %1 **', text)
+            text = util.format('** %s **', text)
         tg.sendMessage(config.i2t.get(to), text)
     }
 })
