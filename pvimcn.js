@@ -81,7 +81,12 @@ async function imgwebp(url, cb) {
                     rj(body)
                     return
                 }
-                rs(body.trim())
+        	var ret = body.trim()
+		var ext = "png"
+        	if(ext != null && !ret.endsWith(ext)){
+        	  ret = ret+"."+ext
+        	}
+		rs(ret)
                 return
             })
         })
