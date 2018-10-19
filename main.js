@@ -8,7 +8,6 @@ var version = '`PROJECT AKARIN VERSION 20180829`'
 var configname = process.argv[2]
 
 const BotClient = require('./bot_api/bot_api')
-const Telegram = require('node-telegram-bot-api')
 const IRC = require('./irc_promise_wrapper')
 const emoji = require('node-emoji')
 const config = require('./config/' + configname + '.js')
@@ -26,7 +25,6 @@ for (let [t, i] of config.t2i) {
 }
 
 var tg = new BotClient(config.api_id, config.api_hash, config.tg_bot_api_key)
-var tg2 = new Telegram(config.tg_bot_api_key)
 var irc_c = new IRC.ClientPromise(config.irc_server, config.irc_nick, {
     channels: [...irc_channels],
     debug: true,
@@ -257,22 +255,31 @@ irc_c.addListener('topic', function (chan, newtopic, nick, message) {
     topic.set(chan, newtopic)
     if (config.i2t.has(chan)) {
         if (nick) {
-            tg.sendMessage(config.i2t.get(chan), 'Channel ' + chan + ' has topic by ' + nick + ': ' + newtopic)
+            return tg.sendMessage(config.i2t.get(chan), 'Channel ' + chan + ' has topic by ' + nick + ': ' + newtopic)
         } else {
-            tg.sendMessage(config.i2t.get(chan), 'Channel ' + chan + ' topic:' + newtopic)
+            return tg.sendMessage(config.i2t.get(chan), 'Channel ' + chan + ' topic:' + newtopic)
         }
     }
 })
 
 
 async function sendimg(ic, fileid, msg, type) {
-    await tg.sendChatAction(msg.chat.id, 'upload_photo')
-    let url = await tg2.getFileLink(fileid)
-    var trimmed = url.trim()
+    switch (type) {
+        case 'Img':
+        case 'Sticker':
+            await tg.sendChatAction(msg.chat.id, 'upload_photo')
+            break
+        case 'Voice':
+            await tg.sendChatAction(msg.chat.id, 'upload_audio')
+            break
+        default:
+            await tg.sendChatAction(msg.chat.id, 'upload_document')
+    }
+    let file_data = await tg.getFile(fileid)
     let user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name)
-    if (trimmed.endsWith('webp')) {
+    if (type == 'Sticker') {
         try {
-            let ret = await pvimcn.imgwebp(url)
+            let ret = await pvimcn.imgwebp(file_data.file_path)
             console.log(ret)
             if (msg.caption) {
                 irc_c.say(ic, util.format('[%s] %s: %s Saying: %s', user, type, ret.trim(), msg.caption))
@@ -285,7 +292,7 @@ async function sendimg(ic, fileid, msg, type) {
         }
     } else {
         try {
-            let ret = await pvimcn.imgvim(url)
+            let ret = await pvimcn.imgvim(file_data.file_path)
             console.log(ret)
             if (msg.caption) {
                 irc_c.say(ic, util.format('[%s] %s: %s Saying: %s', user, type, ret.trim(), msg.caption))
@@ -297,6 +304,7 @@ async function sendimg(ic, fileid, msg, type) {
             return
         }
     }
+    await tg.deleteFile(file_data.file_id)
 }
 
 async function on_message(msg) {
@@ -326,21 +334,17 @@ async function on_message(msg) {
                 largest = p
             }
         }
-        sendimg(ic, largest.file_id, msg, 'Img')
-        return
+        return sendimg(ic, largest.file_id, msg, 'Img')
     } else if (config.irc_sticker_forwarding_enabled && msg.sticker) {
         // Stickers
-        sendimg(ic, msg.sticker.file_id, msg, 'Sticker')
-        return
+        return sendimg(ic, msg.sticker.file_id, msg, 'Sticker')
     } else if (config.irc_photo_forwarding_enabled && msg.voice) {
         // VoiceNote
-        sendimg(ic, msg.voice.file_id, msg, 'Voice')
-        return
+        return sendimg(ic, msg.voice.file_id, msg, 'Voice')
     } else if (config.irc_photo_forwarding_enabled && msg.document) {
         // Document
-        sendimg(ic, msg.document.file_id, msg,
+        return sendimg(ic, msg.document.file_id, msg,
             util.format('File(%s)', msg.document.mime_type))
-        return
     } else if (msg.new_chat_participant) {
         // New Chat Participant from Telegram
 
@@ -553,7 +557,7 @@ async function on_message(msg) {
     user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name)
     if (msg.reply_to_message) {
         if (msg.reply_to_message.from.id == me.id) {
-            var nickregex = /^[\[\(<]([^ ]*)[>\)\]] /
+            var nickregex = /^[[(<]([^ ]*)[>)\]] /
             if (msg.reply_to_message.text.match(nickregex)) {
                 reply_to = msg.reply_to_message.text.match(nickregex)[1]
                 text = msg.reply_to_message.text.substr(reply_to.length + 3)
@@ -576,7 +580,7 @@ async function on_message(msg) {
         message_text = util.format('[%s] %s: %s', user, reply_to, message_text)
     } else if (msg.forward_from) {
         if (msg.forward_from.id == me.id)
-            forward_from = msg.text.match(/^[\[\(<]([^>\)\]\[]+)[>\)\]]/)[1]
+            forward_from = msg.text.match(/^[[(<]([^>)\][]+)[>)\]]/)[1]
         else
             forward_from = format_name(msg.forward_from.id, msg.forward_from.first_name, msg.forward_from.last_name)
         message_text = await format_newline(ic, msg.text, user, forward_from,

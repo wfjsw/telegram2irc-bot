@@ -1,7 +1,8 @@
 const request = require('request')
 const rp = require('request-promise-native')
-const stream = require('stream')
+// const stream = require('stream')
 const fs = require('fs')
+const fsp = fs.promises
 const cp = require('child_process')
 
 async function pvim(message) {
@@ -18,33 +19,28 @@ async function pvim(message) {
     }
 }
 
-async function imgvim(url) {
+async function imgvim(path) {
     var ext = null
     try {
-      ext = url.match(/.*(\.[^\/]*)$/)[1].substring(1)
-    }catch(e){
-      ext = null
+        ext = path.match(/.*(\.[^/]*)$/)[1].substring(1)
+    } catch (e) {
+        ext = null
     }
 
-    var data = await rp.get({
-      url: url,
-      encoding: null
-    })
-    console.log('Debug: posting image '+url)
+    var data = await fsp.readFile(path)
+    console.log('Debug: posting image ' + path)
     try {
-        var buffers = []
-        buffers.push(data)
         let body = await rp.post({
-          url: 'https://fars.ee/?u=1', formData: {
-            c: {
-              value: Buffer.concat(buffers),
-              options: {filename: ext ? 'c.'+ext : 'c', contentType: 'image/'+ext}
+            url: 'https://fars.ee/?u=1', formData: {
+                c: {
+                    value: data,
+                    options: { filename: ext ? 'c.' + ext : 'c', contentType: 'image/' + ext }
+                }
             }
-          }
         })
         var ret = body.trim()
-        if(ext != null && !ret.endsWith(ext)){
-          ret = ret+"."+ext
+        if (ext != null && !ret.endsWith(ext)) {
+            ret = ret + '.' + ext
         }
         return ret
     } catch (e) {
@@ -53,15 +49,12 @@ async function imgvim(url) {
     }
 }
 
-async function imgwebp(url, cb) {
+async function imgwebp(path) {
     return new Promise((rs, rj) => {
-        var convert = cp.spawn('convert', ['-define', 'png:exclude-chunks=date,time', 'webp:-', 'png:-'], { shell: false })
-        request.get(url)
-            .on('response', (response) => {
-                console.log(url)
-            })
-            .pipe(convert.stdin)
+        // TODO: use sharp library for webp -> png
 
+        var convert = cp.spawn('convert', ['-define', 'png:exclude-chunks=date,time', 'webp:-', 'png:-'], { shell: false })
+        fs.createReadStream(path).pipe(convert.stdin)
         var buffers = []
         convert.stdout.on('data', (data) => {
             buffers.push(data)
@@ -81,12 +74,12 @@ async function imgwebp(url, cb) {
                     rj(body)
                     return
                 }
-        	var ret = body.trim()
-		var ext = "png"
-        	if(ext != null && !ret.endsWith(ext)){
-        	  ret = ret+"."+ext
-        	}
-		rs(ret)
+                var ret = body.trim()
+                var ext = 'png'
+                if (ext != null && !ret.endsWith(ext)) {
+                    ret = ret + '.' + ext
+                }
+                rs(ret)
                 return
             })
         })
@@ -100,13 +93,15 @@ async function test() {
 
 
 async function testImg() {
-    let url = await imgvim('https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png')
-    console.log(url)
+    console.log('TODO: change url to local path')
+    // let url = await imgvim('https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png')
+    // console.log(url)
 }
 
 async function testWebp() {
-    let url = await imgwebp('http://www.gstatic.com/webp/gallery/1.webp')
-    console.log(url)
+    console.log('TODO: change url to local path')
+    // let url = await imgwebp('http://www.gstatic.com/webp/gallery/1.webp')
+    // console.log(url)
 }
 
 
