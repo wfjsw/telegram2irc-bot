@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-// Total hours wasted here -> 12
+// Total hours wasted here -> 35
 // ^ Do Not Remove This!
 
-var version = '`PROJECT AKARIN VERSION 20180829`'
+var version = '`PROJECT AKARIN(TDLIB-FULL) VERSION 20181124`'
 
 var configname = process.argv[2]
 
-const BotClient = require('./bot_api/bot_api')
+const {Bot, Logger} = require('tdlib')
 const IRC = require('./irc_promise_wrapper')
 const emoji = require('node-emoji')
 const config = require('./config/' + configname + '.js')
@@ -24,7 +24,9 @@ for (let [t, i] of config.t2i) {
     irc_channels.add(i)
 }
 
-var tg = new BotClient(config.api_id, config.api_hash, config.tg_bot_api_key)
+Logger.setLogVerbosityLevel(2)
+
+var tg = new Bot(config.api_id, config.api_hash, config.tg_bot_api_key)
 var irc_c = new IRC.ClientPromise(config.irc_server, config.irc_nick, {
     channels: [...irc_channels],
     debug: true,
