@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "he": "^1.2.0",
+    "emoji": "^0.3.2",
     "irc-upd": "^0.10.0",
     "jsonfile": "^5.0.0",
     "node-emoji": "^1.8.1",

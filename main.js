@@ -223,7 +223,7 @@ for (let [ic, tc] of config.i2t) {
             message = util.format('[%s] %s', from, message)
         // say last context to irc
         if (message.match(/\s*\\last\w*/)) {
-            var last_msg = util.format('Replied %s: %s', lastContext.name, lastContext.text)
+            var last_msg = util.format('Replied %s: %s', lastContext.get(ic).name, lastContext.get(ic).text)
             irc_c.say(ic, last_msg)
             console.log(last_msg)
             message += '\n' + last_msg
@@ -342,7 +342,12 @@ async function on_message(msg) {
         return sendimg(ic, msg.sticker.file_id, msg, 'Sticker')
     } else if (config.irc_photo_forwarding_enabled && msg.voice) {
         // VoiceNote
-        return sendimg(ic, msg.voice.file_id, msg, 'Voice')
+        sendimg(ic, msg.voice.file_id, msg, 'Voice')
+        return
+    } else if (config.irc_photo_forwarding_enabled && msg.video) {
+        // Video
+        sendimg(ic, msg.video.file_id, msg, 'Video')
+        return
     } else if (config.irc_photo_forwarding_enabled && msg.document) {
         // Document
         return sendimg(ic, msg.document.file_id, msg,
@@ -510,6 +515,9 @@ async function on_message(msg) {
                     first_name + ' ' + last_name :
                     first_name
                 let oldnick = nickmap.getNick(msg.from.id)
+		if (!oldnick) {
+			oldnick = ""
+		}
                 nickmap.setNick(msg.from.id, nick)
                 let notifymsg = util.format('User "%s" with nick "%s" changed nick to "%s"', full_name, oldnick, nick)
                 tg.sendMessage(
@@ -559,9 +567,13 @@ async function on_message(msg) {
     user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name)
     if (msg.reply_to_message) {
         if (msg.reply_to_message.from.id == me.id) {
-            var nickregex = /^[[(<]([^ ]*)[>)\]] /
-            if (msg.reply_to_message.text.match(nickregex)) {
-                reply_to = msg.reply_to_message.text.match(nickregex)[1]
+            var nickregex = [/^\[[^\]]+] [\[\(<]([^ ]*)[>\)\]] / ,/^[\[\(<]([^ ]*)[>\)\]] /]
+            if (msg.reply_to_message.text.match(nickregex[0])) {
+                reply_to = msg.reply_to_message.text.match(nickregex[0])[1]
+                text = msg.reply_to_message.text.substr(reply_to.length + 3)
+            }
+            else if (msg.reply_to_message.text.match(nickregex[1])) {
+                reply_to = msg.reply_to_message.text.match(nickregex[1])[1]
                 text = msg.reply_to_message.text.substr(reply_to.length + 3)
             } else {
                 reply_to = '[Nobody]'
