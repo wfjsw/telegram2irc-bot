@@ -39,6 +39,7 @@ var irc_c = new IRC.ClientPromise(config.irc_server, config.irc_nick, {
     password: config.irc_password,
     floodProtection: true,
     floodProtectionDelay: 1000,
+    retryDelay: 5000,
     autoConnect: true,
     autoRejoin: true,
     autoRenick: true,
@@ -46,8 +47,12 @@ var irc_c = new IRC.ClientPromise(config.irc_server, config.irc_nick, {
 })
 var me
 var enabled = new Set() // Set of Telegram Group ID
-var blocki2t = config.blocki2t
-var blockt2i = config.blockt2i
+var blocki2t = new Set(config.blocki2t)
+config.blocki2t = blocki2t;
+var blockt2i = new Set(config.blockt2i)
+config.blockt2i = blockt2i;
+var other_bridge_bots = new Set(config.other_bridge_bots)
+config.other_bridge_bots = other_bridge_bots;
 
 
 var inittime = Math.round(Date.now() / 1000)
@@ -406,7 +411,7 @@ async function on_message(msg) {
                 parse_mode: 'Markdown'
             })
         } else if (command[0] == '/blocki2t') {
-            if (command[1] && blocki2t.has(command[1])) {
+            if (command[1] && !blocki2t.has(command[1])) {
                 blocki2t.add(command[1])
                 return tg.sendMessage(msg.chat.id, '`Temporary Blocked ' + command[1] + ' From IRC to Telegram!`', {
                     parse_mode: 'Markdown'
@@ -434,7 +439,7 @@ async function on_message(msg) {
             }
         } else if (command[0] == '/unblocki2t') {
             if (command[1] && blocki2t.has(command[1])) {
-                blocki2t.delete(blocki2t.indexOf(command[1]))
+                blocki2t.delete(command[1])
                 return tg.sendMessage(msg.chat.id, '`Temporary Unblocked ' + command[1] + ' From IRC to Telegram!`', {
                     parse_mode: 'Markdown'
                 })
