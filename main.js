@@ -39,6 +39,7 @@ var irc_c = new IRC.ClientPromise(config.irc_server, config.irc_nick, {
     password: config.irc_password,
     floodProtection: true,
     floodProtectionDelay: 1000,
+    retryDelay: 5000,
     autoConnect: true,
     autoRejoin: true,
     autoRenick: true,
@@ -46,8 +47,12 @@ var irc_c = new IRC.ClientPromise(config.irc_server, config.irc_nick, {
 })
 var me
 var enabled = new Set() // Set of Telegram Group ID
-var blocki2t = config.blocki2t
-var blockt2i = config.blockt2i
+var blocki2t = new Set(config.blocki2t)
+config.blocki2t = blocki2t;
+var blockt2i = new Set(config.blockt2i)
+config.blockt2i = blockt2i;
+var other_bridge_bots = new Set(config.other_bridge_bots)
+config.other_bridge_bots = other_bridge_bots;
 
 
 var inittime = Math.round(Date.now() / 1000)
@@ -223,7 +228,7 @@ for (let [ic, tc] of config.i2t) {
             message = util.format('[%s] %s', from, message)
         // say last context to irc
         if (message.match(/\s*\\last\w*/)) {
-            var last_msg = util.format('Replied %s: %s', lastContext.name, lastContext.text)
+            var last_msg = util.format('Replied %s: %s', lastContext.get(ic).name, lastContext.get(ic).text)
             irc_c.say(ic, last_msg)
             console.log(last_msg)
             message += '\n' + last_msg
@@ -342,7 +347,12 @@ async function on_message(msg) {
         return sendimg(ic, msg.sticker.file_id, msg, 'Sticker')
     } else if (config.irc_photo_forwarding_enabled && msg.voice) {
         // VoiceNote
-        return sendimg(ic, msg.voice.file_id, msg, 'Voice')
+        sendimg(ic, msg.voice.file_id, msg, 'Voice')
+        return
+    } else if (config.irc_photo_forwarding_enabled && msg.video) {
+        // Video
+        sendimg(ic, msg.video.file_id, msg, 'Video')
+        return
     } else if (config.irc_photo_forwarding_enabled && msg.document) {
         // Document
         return sendimg(ic, msg.document.file_id, msg,
@@ -401,7 +411,7 @@ async function on_message(msg) {
                 parse_mode: 'Markdown'
             })
         } else if (command[0] == '/blocki2t') {
-            if (command[1] && blocki2t.has(command[1])) {
+            if (command[1] && !blocki2t.has(command[1])) {
                 blocki2t.add(command[1])
                 return tg.sendMessage(msg.chat.id, '`Temporary Blocked ' + command[1] + ' From IRC to Telegram!`', {
                     parse_mode: 'Markdown'
@@ -429,7 +439,7 @@ async function on_message(msg) {
             }
         } else if (command[0] == '/unblocki2t') {
             if (command[1] && blocki2t.has(command[1])) {
-                blocki2t.delete(blocki2t.indexOf(command[1]))
+                blocki2t.delete(command[1])
                 return tg.sendMessage(msg.chat.id, '`Temporary Unblocked ' + command[1] + ' From IRC to Telegram!`', {
                     parse_mode: 'Markdown'
                 })
@@ -510,6 +520,9 @@ async function on_message(msg) {
                     first_name + ' ' + last_name :
                     first_name
                 let oldnick = nickmap.getNick(msg.from.id)
+		if (!oldnick) {
+			oldnick = ""
+		}
                 nickmap.setNick(msg.from.id, nick)
                 let notifymsg = util.format('User "%s" with nick "%s" changed nick to "%s"', full_name, oldnick, nick)
                 tg.sendMessage(
@@ -559,9 +572,13 @@ async function on_message(msg) {
     user = format_name(msg.from.id, msg.from.first_name, msg.from.last_name)
     if (msg.reply_to_message) {
         if (msg.reply_to_message.from.id == me.id) {
-            var nickregex = /^[[(<]([^ ]*)[>)\]] /
-            if (msg.reply_to_message.text.match(nickregex)) {
-                reply_to = msg.reply_to_message.text.match(nickregex)[1]
+            var nickregex = [/^\[[^\]]+] [\[\(<]([^ ]*)[>\)\]] / ,/^[\[\(<]([^ ]*)[>\)\]] /]
+            if (msg.reply_to_message.text.match(nickregex[0])) {
+                reply_to = msg.reply_to_message.text.match(nickregex[0])[1]
+                text = msg.reply_to_message.text.substr(reply_to.length + 3)
+            }
+            else if (msg.reply_to_message.text.match(nickregex[1])) {
+                reply_to = msg.reply_to_message.text.match(nickregex[1])[1]
                 text = msg.reply_to_message.text.substr(reply_to.length + 3)
             } else {
                 reply_to = '[Nobody]'
