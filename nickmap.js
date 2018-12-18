@@ -27,6 +27,13 @@ function getNick(id) {
     }
 }
 
+function deleteNick(id) {
+    var names = jf.readFileSync(file)
+    delete names[id]
+    jf.writeFileSync(file, names)
+    reload()
+}
+
 function tests() {
     setNick('farseerfc', 'fc')
 }
@@ -47,3 +54,4 @@ reload()
 
 exports.setNick = setNick
 exports.getNick = getNick
+exports.deleteNick = deleteNick
