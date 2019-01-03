@@ -686,7 +686,17 @@ irc_c.addListener('error', function (emsg) {
 irc_c.addListener('unhandled', function (emsg) {
     console.log('unhandled exception: ', emsg)
     if (config.error_report_channel) tg.sendMessage(config.error_report_channel, `Unhandled Exception: \n${emsg}`)
+})
 
+irc_c.addListener('registered', () => {
+    if (!config.irc_sasl) return 
+    const current_nick = irc_c.nick
+    if (current_nick !== config.irc_nick) {
+        // Nick collision. Send GHOST command to NickServ to reclaim the nick.
+        irc_c.send('msg', 'NickServ', 'GHOST', config.irc_nick)
+        irc_c.send('nick', config.irc_nick)
+        console.log('Reclaimed nick', config.irc_nick)
+    }
 })
 
 async function takeDown() {
