@@ -415,7 +415,11 @@ async function on_message(msg) {
             // fall through
         } else if (command[0] == '/ircrejoin') {
             // To Async/Await
-            await irc_c.part(ic)
+            try {
+                await irc_c.part(ic)
+            } catch (e) {
+                // ignore
+            }
             await irc_c.join(ic)
             return tg.sendMessage(msg.chat.id, '`EXECUTE ORDER REJOIN`', {
                 parse_mode: 'Markdown'
