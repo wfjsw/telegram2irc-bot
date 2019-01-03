@@ -76,3 +76,6 @@ exports.replace_emoji = true
 exports.custom_command = {
     '/list': '!!list'
 }
+
+// Telegram channel to send Error Report
+exports.error_report_channel = 0

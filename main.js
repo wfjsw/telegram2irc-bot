@@ -674,8 +674,15 @@ tg.on('inline_query', function (msg) {
 })
 */
 
-irc_c.addListener('error', function (e) {
-    console.log('error: ', e.message)
+irc_c.addListener('error', function (emsg) {
+    console.log('error: ', emsg)
+    if (config.error_report_channel) tg.sendMessage(config.error_report_channel, `Error: \n${emsg}`)
+})
+
+irc_c.addListener('unhandled', function (emsg) {
+    console.log('unhandled exception: ', emsg)
+    if (config.error_report_channel) tg.sendMessage(config.error_report_channel, `Unhandled Exception: \n${emsg}`)
+
 })
 
 async function takeDown() {
