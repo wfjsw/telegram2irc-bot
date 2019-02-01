@@ -14,7 +14,7 @@
     "node-emoji": "^1.8.1",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.5",
-    "tdlib": "github:wfjsw/node-tdlib#344643b9e48cf3197ddc1b93ebe71983fc6f8918"
+    "tdlib": "github:wfjsw/node-tdlib#da0f36ced9ffb2665acc84fc054631b241aefd19"
   },
   "private": true
 }

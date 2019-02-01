@@ -26,7 +26,9 @@ for (let [t, i] of config.t2i) {
 
 Logger.setLogVerbosityLevel(2)
 
-var tg = new Bot(config.api_id, config.api_hash, config.tg_bot_api_key)
+var tg = new Bot(config.api_id, config.api_hash, config.tg_bot_api_key, false, null, {
+    polling_mode: 'async'
+})
 var irc_c = new IRC.ClientPromise(config.irc_server, config.irc_nick, {
     channels: [...irc_channels],
     debug: true,
@@ -679,8 +681,21 @@ tg.on('inline_query', function (msg) {
 */
 
 irc_c.addListener('error', function (emsg) {
-    console.log('error: ', emsg)
+    // console.log('error: ', emsg)
     if (config.error_report_channel) tg.sendMessage(config.error_report_channel, `Error: \n${emsg}`)
+    if (emsg.command === 'err_cannotsendtochan') {
+        const irc_chan = emsg.args[1]
+        if (irc_channels.has(irc_chan)) {
+            const tg_gid = config.i2t.get(irc_chan)
+            try {
+                await irc_c.join(irc_chan)
+                const tg_gid = config.i2t.get(irc_chan)
+                await tg.sendMessage(tg_gid, 'Failed to send to channel. Trying to rejoin...')
+            } catch (e) {
+                await tg.sendMessage(tg_gid, 'Failed to send to channel. Rejoin failed. Contact admin.')
+            }
+        }
+    }
 })
 
 irc_c.addListener('unhandled', function (emsg) {
