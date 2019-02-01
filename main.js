@@ -680,9 +680,9 @@ tg.on('inline_query', function (msg) {
 })
 */
 
-irc_c.addListener('error', function (emsg) {
+irc_c.addListener('error', async function (emsg) {
     // console.log('error: ', emsg)
-    if (config.error_report_channel) tg.sendMessage(config.error_report_channel, `Error: \n${emsg}`)
+    if (config.error_report_channel) await tg.sendMessage(config.error_report_channel, `Error: \n${emsg}`)
     if (emsg.command === 'err_cannotsendtochan') {
         const irc_chan = emsg.args[1]
         if (irc_channels.has(irc_chan)) {
